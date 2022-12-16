@@ -1,0 +1,13 @@
+[package]
+name="advent-of-code-2022"
+version="0.1.0"
+include = ["src/*.rs"]
+description = "My solutions for the 2022 Advent of Code. https://adventofcode.com/2022"
+license = "MIT"
+documentation = "README.md"
+
+[[bin]]
+name = "day01"
+path = "src/day01/main.rs"
+test = false
+bench = false
