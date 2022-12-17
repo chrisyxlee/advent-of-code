@@ -5,6 +5,10 @@ include = ["src/*.rs"]
 description = "My solutions for the 2022 Advent of Code. https://adventofcode.com/2022"
 license = "MIT"
 documentation = "README.md"
+edition = "2021"
+
+[dependencies]
+regex = "1"
 
 [[bin]]
 name = "day01"
@@ -21,3 +25,7 @@ path = "src/day03/main.rs"
 [[bin]]
 name = "day04"
 path = "src/day04/main.rs"
+
+[[bin]]
+name = "day05"
+path = "src/day05/main.rs"
