@@ -16,32 +16,35 @@ fn main() {
         // Consumes the iterator, returns an (Optional) String
         for line in lines {
             if let Ok(ip) = line {
-               if parse_line(&ip) {
-                  count +=  1
-               }
+                if parse_line(&ip) {
+                    count += 1
+                }
             }
         }
         println!("Total overlapping: {}", count);
     }
 }
 
-fn range_overlaps(start1: i32, end1: i32, start2: i32, end2: i32) -> bool{
-   // not overlapping
-   return !(end1 < start2 || end2 < start1)
+fn range_overlaps(start1: i32, end1: i32, start2: i32, end2: i32) -> bool {
+    // not overlapping
+    return !(end1 < start2 || end2 < start1);
 }
 
 fn parse_range(rng: &str) -> (i32, i32) {
-   let parts = rng.split("-").collect::<Vec<&str>>();
-   return  (parts[0].parse::<i32>().unwrap(), parts[1].parse::<i32>().unwrap());
+    let parts = rng.split("-").collect::<Vec<&str>>();
+    return (
+        parts[0].parse::<i32>().unwrap(),
+        parts[1].parse::<i32>().unwrap(),
+    );
 }
 
 fn parse_line(line: &String) -> bool {
-   let parts = line.split(",").collect::<Vec<&str>>();
+    let parts = line.split(",").collect::<Vec<&str>>();
 
-   let (r1_start, r1_end) = parse_range(parts[0]);
-   let (r2_start, r2_end)= parse_range(parts[1]);
+    let (r1_start, r1_end) = parse_range(parts[0]);
+    let (r2_start, r2_end) = parse_range(parts[1]);
 
-   return range_overlaps(r1_start, r1_end, r2_start, r2_end)
+    return range_overlaps(r1_start, r1_end, r2_start, r2_end);
 }
 
 // The output is wrapped in a Result to allow matching on errors

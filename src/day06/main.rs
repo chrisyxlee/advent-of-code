@@ -40,11 +40,10 @@ fn main() {
 
                     if i >= size {
                         if uniques.len() == size {
-                            println!("Parsed {} characters", i+1);
+                            println!("Parsed {} characters", i + 1);
                             return;
                         }
                     }
-
                 }
             }
         }

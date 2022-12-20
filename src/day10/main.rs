@@ -45,10 +45,10 @@ fn main() {
                 cycle = get_pixel(cycle + 1, x);
                 x += num_add;
                 if x < 0 {
-                  x = 0;
+                    x = 0;
                 }
                 if x > 39 {
-                  x = 40;
+                    x = 40;
                 }
             } else {
                 cycle = get_pixel(cycle + 1, x);
