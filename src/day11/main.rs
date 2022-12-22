@@ -2,9 +2,11 @@ use std::cell::RefCell;
 use std::fs::File;
 use std::io::{self, BufRead};
 use std::path::Path;
+use std::time::Instant;
 
 fn main() {
     // --snip--
+
     let file_path = "tmp/day11/input.txt";
     println!("In file {}", file_path);
 
@@ -13,12 +15,10 @@ fn main() {
         .filter(|x| x.is_ok())
         .map(|x| x.expect("bad lines should be filtered"))
         .collect();
-
-    let mut monkeys: Vec<RefCell<Monkey>> = Vec::new();
-    let sections = split_lines(lines);
-    for section in sections.iter() {
-        monkeys.push(Monkey::from_section(section));
-    }
+    let monkeys: Vec<RefCell<Monkey>> = split_lines(lines)
+        .iter()
+        .map(|section| Monkey::from_section(section))
+        .collect();
 
     let num_rounds_to_print = 1;
 
@@ -26,16 +26,13 @@ fn main() {
         if round % num_rounds_to_print == 0 {
             println!("Round {}:", round);
         }
-        for (i, monkey) in monkeys.iter().enumerate() {
+        for (_i, monkey) in monkeys.iter().enumerate() {
             let mut monkey = monkey.borrow_mut();
             loop {
                 match monkey.perform_action() {
                     Some((item, dst)) => monkeys[dst as usize].borrow_mut().receive_item(item),
                     _ => break,
                 }
-            }
-            if round % num_rounds_to_print == 0 {
-                println!("monkey[{}].inspection = {}", i, monkey.inspection_count);
             }
         }
     }
@@ -58,9 +55,9 @@ fn v2c(v: i32) -> char {
     return (v as u8 + '0' as u8) as char;
 }
 
-fn i2s(v: i32) -> String {
+fn i2s(v: i32) -> Vec<char> {
     if v == 0 {
-        return String::from("0");
+        return Vec::new();
     }
     let mut result = String::from("");
     let mut curr = v;
@@ -68,21 +65,21 @@ fn i2s(v: i32) -> String {
         result.push(v2c(curr % 10));
         curr = curr / 10;
     }
-    return result.chars().rev().collect::<String>();
+    return result.chars().collect();
 }
 
-fn mult_str(a: &str, b: &str) -> String {
-    let bchars: Vec<char> = b.chars().rev().collect();
-    let mut to_add: Vec<String> = Vec::new();
-    for (ai, ac) in a.chars().rev().enumerate() {
+fn mult_str(a: &Vec<char>, b: &Vec<char>) -> Vec<char> {
+    let now = Instant::now();
+    let mut result: Vec<char> = Vec::new();
+    for ai in 0..a.len() {
         let mut carry: i32 = 0;
-        let mut partials = String::from("");
+        let mut partials: Vec<char> = Vec::new();
         for _i in 0..ai {
             partials.push('0');
         }
-        let av = c2v(ac);
-        for bc in bchars.iter() {
-            let bv = c2v(*bc);
+        let av = c2v(a[ai]);
+        for bi in 0..b.len() {
+            let bv = c2v(b[bi]);
             let tmp = (av * bv) + carry;
             partials.push(v2c(tmp % 10));
             carry = tmp / 10;
@@ -90,64 +87,86 @@ fn mult_str(a: &str, b: &str) -> String {
         if carry > 0 {
             partials.push(v2c(carry));
         }
-        to_add.push(partials.chars().rev().collect::<String>());
+        result = add_str(result, partials);
     }
 
-    let mut result = String::from("0");
-    for v in to_add {
-        result = add_str(v.as_str(), result.as_str());
-    }
+    let elapsed = now.elapsed();
+    println!("MULT Elapsed: {:.2?}", elapsed);
     return result;
 }
 
-fn add_str(a: &str, b: &str) -> String {
+fn add_str(left: Vec<char>, right: Vec<char>) -> Vec<char> {
+    let mut a: Vec<char>;
+    let b: Vec<char>;
+    if left.len() > right.len() {
+        a = left;
+        b = right;
+    } else {
+        a = right;
+        b = left;
+    }
+    if a.len() == 0 {
+        return b;
+    }
+    if b.len() == 0 {
+        return a;
+    }
     // ignore minus signs for now since that's a difference operation.
-    let achars: Vec<char> = a.chars().collect();
-    let bchars: Vec<char> = b.chars().collect();
-    let mut ai: i32 = (achars.len() - 1) as i32;
-    let mut bi: i32 = (bchars.len() - 1) as i32;
+    let mut ai: i32 = 0;
+    let mut bi: i32 = 0;
     let mut carry: i32 = 0;
-    let mut result = String::from("");
-    loop {
-        if ai < 0 && bi < 0 {
-            break;
-        }
-
+    while ai < a.len() as i32 && bi < b.len() as i32 {
         let mut tmp = carry;
-        if ai >= 0 {
-            tmp += c2v(achars[ai as usize]);
-        }
-        if bi >= 0 {
-            tmp += c2v(bchars[bi as usize]);
+        tmp += c2v(a[ai as usize]);
+        if bi < b.len() as i32 {
+            tmp += c2v(b[bi as usize]);
         }
         carry = tmp / 10;
-        result.push(v2c(tmp % 10));
-        ai -= 1;
-        bi -= 1;
+        a[ai as usize] = v2c(tmp % 10);
+        ai += 1;
+        bi += 1;
+    }
+    while carry > 0 {
+        if ai < a.len() as i32 {
+            let tmp = carry + c2v(a[ai as usize]);
+            carry = tmp / 10;
+            a[ai as usize] = v2c(tmp % 10);
+            ai += 1;
+        } else {
+            a.push(v2c(carry));
+            carry = 0;
+        }
     }
 
-    return result.chars().rev().collect::<String>();
+    return a;
 }
 
-fn sub_str(a: &str, b: &str) -> String {
-    // ignore minus signs for now since that's a difference operation.
-    let achars: Vec<char> = a.chars().collect();
-    let bchars: Vec<char> = b.chars().collect();
-    let mut ai: i32 = achars.len() as i32 - 1;
-    let mut bi: i32 = bchars.len() as i32 - 1;
-    let mut borrow: i32 = 0;
-    let mut result = String::from("");
-    loop {
-        if ai < 0 && bi < 0 {
-            break;
-        }
+fn vc2s(v: &Vec<char>) -> String {
+    if v.len() == 0 {
+        return String::from("0");
+    }
+    return v.clone().iter().rev().collect::<String>();
+}
 
+fn s2vc(s: &str) -> Vec<char> {
+    return s.chars().rev().collect();
+}
+
+fn sub_str(mut a: Vec<char>, b: &Vec<char>) -> Vec<char> {
+    if b.len() == 0 {
+        return a;
+    }
+    // ignore minus signs for now since that's a difference operation.
+    let mut ai: i32 = 0;
+    let mut bi: i32 = 0;
+    let mut borrow: i32 = 0;
+    while ai < a.len() as i32 || bi < b.len() as i32 {
         let mut tmp = 0;
-        if ai >= 0 {
-            tmp = c2v(achars[ai as usize]);
+        if ai < a.len() as i32 {
+            tmp = c2v(a[ai as usize]);
         }
-        if bi >= 0 {
-            tmp -= c2v(bchars[bi as usize]);
+        if bi < b.len() as i32 {
+            tmp -= c2v(b[bi as usize]);
         }
         if borrow > 0 {
             tmp -= 1;
@@ -157,89 +176,26 @@ fn sub_str(a: &str, b: &str) -> String {
             borrow = 1;
             tmp += 10;
         }
-        result.push(v2c(tmp % 10));
-        ai -= 1;
-        bi -= 1;
+        if ai < a.len() as i32 {
+            a[ai as usize] = v2c(tmp % 10);
+        }
+        ai += 1;
+        bi += 1;
     }
 
-    return result
-        .chars()
-        .rev()
-        .collect::<String>()
-        .trim_start_matches('0')
-        .to_owned();
+    if let Some(last) = a.iter().rposition(|&c| c != '0') {
+        return a[0..last + 1].to_vec();
+    }
+
+    return a;
 }
 
-fn divisible(a: &str, m: i32) -> bool {
+fn divisible(a: &Vec<char>, m: i32) -> bool {
     let mut res = 0;
-    for c in a.chars() {
-        res = ((res * 10) + (c as i32 - '0' as i32)) % m;
+    for ai in (0..a.len()).rev() {
+        res = ((res * 10) + (a[ai] as i32 - '0' as i32)) % m;
     }
     return res == 0;
-}
-
-#[cfg(test)]
-mod tests {
-    use super::*;
-
-    #[test]
-    fn add_works() {
-        assert!(add_str("5021", "13619") == "18640");
-    }
-
-    #[test]
-    fn sub_works() {
-        let tests = [
-            ("23452", "2621", "20831"),
-            ("1", "0", "1"),
-            (
-                "304690239803953095808098098",
-                "12035123123125322132312312",
-                "292655116680827773675785786",
-            ),
-        ];
-        for (a, b, want) in tests {
-            let got = sub_str(a, b);
-            assert!(want == got, "{} * {} = {}, but got {}", a, b, want, got);
-        }
-    }
-
-    #[test]
-    fn mult_works() {
-        let tests = [
-            ("105", "6219", "652995"),
-            (
-                "1235421415454545454545454544",
-                "1714546546546545454544548544544545",
-                "2118187521397235888154583183918321221520083884298838480662480",
-            ),
-        ];
-        for (a, b, want) in tests {
-            let got = mult_str(a, b);
-            assert_eq!(got, want, "{} * {} = {}, but got {}", a, b, want, got);
-        }
-    }
-
-    #[test]
-    fn mod_works() {
-        let vec = [
-            ("1023691090", 17, false),
-            ("1023691091", 17, true),
-            ("10", 5, true),
-            ("690239803953095808098098", 3, false),
-            ("690239803953095808098098", 2, true),
-            ("690239803953095808098098", 5, false),
-        ];
-        for (num, m, want) in vec {
-            assert!(
-                divisible(num, m) == want,
-                "{} % {} is divisible? want {}",
-                num,
-                m,
-                want,
-            );
-        }
-    }
 }
 
 #[derive(Debug)]
@@ -264,7 +220,7 @@ pub struct ThrowCondition {
 
 #[derive(Debug)]
 pub struct Monkey {
-    items: Vec<String>,
+    items: Vec<Vec<char>>,
     divisor: ThrowCondition,
     calc: Calc,
     inspection_count: i32,
@@ -288,13 +244,17 @@ impl Tok {
         }
     }
 
-    pub fn get_value(&self, old: &str) -> String {
+    pub fn get_value(&self, old: Vec<char>, is_first: bool) -> (Vec<char>, Vec<char>) {
         if let Some(val) = self.val {
-            return i2s(val);
+            return (i2s(val), old);
         }
 
         self.var.expect("no val, must have var");
-        return old.to_owned();
+        if is_first {
+            return (old.clone(), old);
+        } else {
+            return (old, Vec::new());
+        }
     }
 }
 
@@ -307,18 +267,18 @@ impl Calc {
         }
     }
 
-    pub fn calculate(&self, old: String) -> String {
-        let tok1 = self.tok1.get_value(&old);
-        let tok2 = self.tok2.get_value(&old);
+    pub fn calculate(&self, old: Vec<char>) -> Vec<char> {
+        let (tok1, old) = self.tok1.get_value(old, true);
+        let (tok2, _) = self.tok2.get_value(old, false);
         match self.op {
-            '*' => return mult_str(tok1.as_str(), tok2.as_str()),
-            '-' => return sub_str(tok1.as_str(), tok2.as_str()),
-            '+' => return add_str(tok1.as_str(), tok2.as_str()),
+            '*' => return mult_str(&tok1, &tok2),
+            '-' => return sub_str(tok1, &tok2),
+            '+' => return add_str(tok1, tok2),
             _ => (),
         }
 
         assert!(false);
-        return String::from("");
+        return Vec::new();
     }
 }
 
@@ -346,7 +306,7 @@ impl ThrowCondition {
         };
     }
 
-    pub fn get_destination(&self, val: &str) -> i32 {
+    pub fn get_destination(&self, val: &Vec<char>) -> i32 {
         if divisible(val, self.divisor) {
             return self.dst_true;
         }
@@ -364,15 +324,16 @@ impl Monkey {
         });
     }
 
-    fn parse_starting_items(line: &str) -> Vec<String> {
+    fn parse_starting_items(line: &str) -> Vec<Vec<char>> {
         let items_str = line
             .trim_start()
             .strip_prefix("Starting items: ")
             .expect("starting items mismatch");
-        let mut res: Vec<String> = Vec::new();
+        let mut res: Vec<Vec<char>> = Vec::new();
         let parts: Vec<&str> = items_str.split(", ").collect();
         for part in parts {
-            res.push(part.to_owned());
+            let partial: Vec<char> = part.chars().rev().collect();
+            res.push(partial);
         }
         return res;
     }
@@ -393,7 +354,7 @@ impl Monkey {
         );
     }
 
-    fn perform_action(&mut self) -> Option<(String, i32)> {
+    fn perform_action(&mut self) -> Option<(Vec<char>, i32)> {
         if self.items.len() == 0 {
             return None;
         }
@@ -404,7 +365,7 @@ impl Monkey {
         return Some((new_val, dst));
     }
 
-    fn receive_item(&mut self, item: String) {
+    fn receive_item(&mut self, item: Vec<char>) {
         self.items.push(item);
     }
 }
@@ -433,4 +394,84 @@ fn split_lines(lines: Vec<String>) -> Vec<Vec<String>> {
         split_lines[section_idx].push(line.clone());
     }
     return split_lines;
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn add_works() {
+        let tests = [("5021", "13619", "18640"), ("9999999", "1", "10000000")];
+
+        for (a, b, want) in tests {
+            let avc = s2vc(a);
+            let bvc = s2vc(b);
+            let got = vc2s(&add_str(avc, bvc));
+            assert!(want == got, "{} + {} = {}, but got {}", a, b, want, got);
+        }
+    }
+
+    #[test]
+    fn sub_works() {
+        let tests = [
+            ("23452", "2621", "20831"),
+            ("1", "0", "1"),
+            (
+                "304690239803953095808098098",
+                "12035123123125322132312312",
+                "292655116680827773675785786",
+            ),
+            ("100000", "1", "99999"),
+        ];
+        for (a, b, want) in tests {
+            let avc = s2vc(a);
+            let bvc = s2vc(b);
+            let got = vc2s(&sub_str(avc, &bvc));
+            assert!(want == got, "{} - {} = {}, but got {}", a, b, want, got);
+        }
+    }
+
+    #[test]
+    fn mult_works() {
+        let tests = [
+            ("105", "6219", "652995"),
+            (
+                "1235421415454545454545454544",
+                "1714546546546545454544548544544545",
+                "2118187521397235888154583183918321221520083884298838480662480",
+            ),
+        ];
+        for (a, b, want) in tests {
+            let avc = s2vc(&a);
+            let bvc = s2vc(&b);
+            let got = vc2s(&mult_str(&avc, &bvc));
+            assert_eq!(got, want, "{} * {} = {}, but got {}", a, b, want, got);
+        }
+    }
+
+    #[test]
+    fn mod_works() {
+        let vec = [
+            ("1023691090", 17, false),
+            ("1023691091", 17, true),
+            ("153", 17, true),
+            ("153", 9, true),
+            ("153", 5, false),
+            ("10", 5, true),
+            ("690239803953095808098098", 3, false),
+            ("690239803953095808098098", 2, true),
+            ("690239803953095808098098", 5, false),
+        ];
+        for (num, m, want) in vec {
+            let numvc = s2vc(&num);
+            assert!(
+                divisible(&numvc, m) == want,
+                "{} % {} is divisible? want {}",
+                num,
+                m,
+                want,
+            );
+        }
+    }
 }
