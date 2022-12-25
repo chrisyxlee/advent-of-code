@@ -15,11 +15,11 @@ fn main() {
         println!("Part 1: {}", pt1);
     }
 
-    //{
-    //    let dirs = parse_directions(file_path);
-    //    let pt2 = tetris_pt1(&dirs, 1000000000000);
-    //    println!("Parse 2: {}", pt2);
-    //}
+    {
+        let dirs = parse_directions(file_path);
+        let pt2 = tetris_pt2(&dirs, 1000000000000);
+        println!("Parse 2: {}", pt2);
+    }
 }
 
 const STARTING_LEFT_PADDING: usize = 2;
@@ -58,20 +58,91 @@ fn tetris_pt1(directions: &Vec<char>, num_rocks: usize) -> usize {
         dir_index = (dir_index + 1) % directions.len();
         shape_index = (shape_index + 1) % SHAPES.len();
     }
-
-    _print_grid(&grid);
-
     return grid.len();
+}
+
+type Log = (char, usize, usize);
+
+fn tetris_pt2(directions: &Vec<char>, num_rocks: usize) -> usize {
+    let mut grid = create_grid();
+    let mut shape_index: usize = 0;
+    let mut dir_index: usize = 0;
+    let mut rock: usize = 0;
+    let mut logs: Vec<Log> = Vec::new();
+    loop {
+        let shape = SHAPES[shape_index];
+        let mut position = get_start(shape);
+        let mut num_dirs = 0;
+        let start_height = grid.len();
+        while push_and_drop(&mut grid, &mut position, directions[dir_index]) {
+            dir_index = (dir_index + 1) % directions.len();
+            num_dirs += 1;
+        }
+        logs.push((shape, num_dirs, grid.len() - start_height));
+
+        dir_index = (dir_index + 1) % directions.len();
+        shape_index = (shape_index + 1) % SHAPES.len();
+        rock += 1;
+
+        if repeats(&logs) {
+            let mut height = grid.len();
+            let pattern = &logs[0..logs.len() / 2];
+            let pattern_rocks = pattern.iter().fold(0, |acc, (_, _, height)| acc + height);
+            let rocks_left = num_rocks - rock;
+            rock += (rocks_left / pattern_rocks) * pattern_rocks;
+            for i in 0..(rocks_left % pattern_rocks) {
+                let (_, _, gained_height) = pattern[i];
+                height += gained_height;
+                rock += 1;
+            }
+            assert!(
+                num_rocks == rock,
+                "Should have dropped {} rocks, got {}",
+                num_rocks,
+                rock
+            );
+            return height;
+        } else {
+            println!("at rock {}", rock);
+        }
+
+        if rock == num_rocks {
+            break;
+        }
+    }
+    return grid.len();
+}
+
+fn repeats(logs: &Vec<Log>) -> bool {
+    if logs.len() < SHAPES.len() {
+        return false;
+    }
+
+    // Must be able to be divided in half.
+    if logs.len() % 2 != 0 {
+        return false;
+    }
+
+    let midpoint = logs.len() / 2;
+    let first_half = &logs[0..midpoint];
+    let second_half = &logs[midpoint..logs.len()];
+    for i in 0..first_half.len() {
+        if first_half[i] != second_half[i] {
+            return false;
+        }
+    }
+
+    return true;
 }
 
 // To make it easier not to mess up x and y.
 #[derive(PartialEq, Debug, Copy, Clone)]
-pub struct Padding {
+pub struct Point {
     left: usize,
     bottom: i32,
 }
 
-impl Padding {
+impl Point {
     pub fn new(left: usize, bottom: i32) -> Self {
         Self {
             left: left,
@@ -86,32 +157,32 @@ impl Padding {
         }
     }
 
-    fn left(&self) -> Option<Padding> {
+    fn left(&self) -> Option<Point> {
         if self.left > 0 {
-            return Some(Padding::new(self.left - 1, self.bottom));
+            return Some(Point::new(self.left - 1, self.bottom));
         }
         return None;
     }
 
-    fn right(&self) -> Option<Padding> {
+    fn right(&self) -> Option<Point> {
         if self.left < GRID_WIDTH - 1 {
-            return Some(Padding::new(self.left + 1, self.bottom));
+            return Some(Point::new(self.left + 1, self.bottom));
         }
         return None;
     }
 
-    fn down(&self) -> Padding {
-        return Padding::new(self.left, self.bottom - 1);
+    fn down(&self) -> Point {
+        return Point::new(self.left, self.bottom - 1);
     }
 }
 
-impl fmt::Display for Padding {
+impl fmt::Display for Point {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         write!(f, "(l={},b={})", self.left, self.bottom)
     }
 }
 
-fn _print_grid_with_falling(grid: &Grid, falling: &Vec<Padding>) {
+fn _print_grid_with_falling(grid: &Grid, falling: &Vec<Point>) {
     let mut copy = grid.clone();
     for p in falling {
         set(&mut copy, *p, grid.len(), FALLING);
@@ -126,7 +197,7 @@ fn _print_grid(grid: &Grid) {
     }
 }
 
-fn get(grid: &Grid, padding: Padding) -> char {
+fn get(grid: &Grid, padding: Point) -> char {
     if padding.bottom > 0 {
         return EMPTY;
     }
@@ -138,7 +209,7 @@ fn get(grid: &Grid, padding: Padding) -> char {
     return grid[(grid.len() as i32 - 1 + padding.bottom) as usize][padding.left];
 }
 
-fn set(grid: &mut Grid, padding: Padding, height: usize, c: char) {
+fn set(grid: &mut Grid, padding: Point, height: usize, c: char) {
     let y = (height as i32 + (padding.bottom - 1)) as usize;
     if padding.bottom > 0 {
         for _i in grid.len()..=(y) {
@@ -149,16 +220,16 @@ fn set(grid: &mut Grid, padding: Padding, height: usize, c: char) {
     grid[y][padding.left] = c;
 }
 
-fn get_start(shape: char) -> Vec<Padding> {
-    let start = Padding::start();
+fn get_start(shape: char) -> Vec<Point> {
+    let start = Point::start();
     match shape {
         // ####
         HORIE => {
             return Vec::from([
                 start,
-                Padding::new(start.left + 1, start.bottom),
-                Padding::new(start.left + 2, start.bottom),
-                Padding::new(start.left + 3, start.bottom),
+                Point::new(start.left + 1, start.bottom),
+                Point::new(start.left + 2, start.bottom),
+                Point::new(start.left + 3, start.bottom),
             ]);
         }
         //  #
@@ -166,11 +237,11 @@ fn get_start(shape: char) -> Vec<Padding> {
         // S#
         PLUS => {
             return Vec::from([
-                Padding::new(start.left + 1, start.bottom),
-                Padding::new(start.left, start.bottom + 1),
-                Padding::new(start.left + 1, start.bottom + 1),
-                Padding::new(start.left + 2, start.bottom + 1),
-                Padding::new(start.left + 1, start.bottom + 2),
+                Point::new(start.left + 1, start.bottom),
+                Point::new(start.left, start.bottom + 1),
+                Point::new(start.left + 1, start.bottom + 1),
+                Point::new(start.left + 2, start.bottom + 1),
+                Point::new(start.left + 1, start.bottom + 2),
             ]);
         }
         //   #
@@ -179,10 +250,10 @@ fn get_start(shape: char) -> Vec<Padding> {
         ELL => {
             return Vec::from([
                 start,
-                Padding::new(start.left + 1, start.bottom),
-                Padding::new(start.left + 2, start.bottom),
-                Padding::new(start.left + 2, start.bottom + 1),
-                Padding::new(start.left + 2, start.bottom + 2),
+                Point::new(start.left + 1, start.bottom),
+                Point::new(start.left + 2, start.bottom),
+                Point::new(start.left + 2, start.bottom + 1),
+                Point::new(start.left + 2, start.bottom + 2),
             ])
         }
         // #
@@ -192,9 +263,9 @@ fn get_start(shape: char) -> Vec<Padding> {
         VERTIE => {
             return Vec::from([
                 start,
-                Padding::new(start.left, start.bottom + 1),
-                Padding::new(start.left, start.bottom + 2),
-                Padding::new(start.left, start.bottom + 3),
+                Point::new(start.left, start.bottom + 1),
+                Point::new(start.left, start.bottom + 2),
+                Point::new(start.left, start.bottom + 3),
             ]);
         }
         // ##
@@ -202,9 +273,9 @@ fn get_start(shape: char) -> Vec<Padding> {
         SQUARE => {
             return Vec::from([
                 start,
-                Padding::new(start.left, start.bottom + 1),
-                Padding::new(start.left + 1, start.bottom),
-                Padding::new(start.left + 1, start.bottom + 1),
+                Point::new(start.left, start.bottom + 1),
+                Point::new(start.left + 1, start.bottom),
+                Point::new(start.left + 1, start.bottom + 1),
             ]);
         }
         _ => assert!(false, "wrong shape: {}", shape),
@@ -213,7 +284,7 @@ fn get_start(shape: char) -> Vec<Padding> {
     return Vec::new();
 }
 
-fn push_and_drop(grid: &mut Grid, position: &mut Vec<Padding>, dir: char) -> bool {
+fn push_and_drop(grid: &mut Grid, position: &mut Vec<Point>, dir: char) -> bool {
     //	If any movement would cause any part of the rock to move into the walls,
     // floor, or a stopped rock, the movement instead does not occur.
     if position
