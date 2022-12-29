@@ -5,8 +5,7 @@ is-number:
 .PHONY: run-%
 run-%:
 	@$(MAKE) is-number NUM=$(*)
-	(cargo run --bin day$(*) > tmp/day$(*)/debug.log)
-	bat tmp/day$(*)/debug.log
+	(cargo run --bin day$(*) > tmp/day$(*)/debug.log); bat tmp/day$(*)/debug.log
 
 .PHONY: test-%
 test-%:
