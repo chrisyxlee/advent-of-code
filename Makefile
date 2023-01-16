@@ -19,3 +19,7 @@ init-%:
 	@([ -d src/day$(*) ] && echo "src/day$(*) already exists") || cp -r src/day${SRC} src/day$(*)
 	@([ -d tmp/day$(*) ] && echo "tmp/day$(*) already exists") || cp -r tmp/day${SRC} tmp/day$(*)
 
+.PHONY: input-%
+input-%:
+	@$(MAKE) is-number NUM=$(*)
+	@bat tmp/day$(*)/input.txt
