@@ -1,5 +1,6 @@
 use regex::Regex;
 use std::cell::RefCell;
+use std::cmp::Ordering;
 use std::collections::HashMap;
 use std::collections::HashSet;
 use std::fmt;
@@ -13,6 +14,9 @@ fn main() {
     println!("In file {}", file_path);
 
     {
+        // 1180 is too low.
+        // 1250 is too low.
+        // 1600 is too low.
         println!("Part 1: {}", solve_pt1(read_lines(file_path)));
     }
 }
@@ -26,6 +30,8 @@ fn solve_pt1(lines: Vec<String>) -> usize {
         valves.entry(name).or_insert(valve);
     }
 
+    let dists = create_dist_grid(&valves);
+
     for key in valves.keys() {
         println!("{}: {}", key, valves[key].borrow());
     }
@@ -38,81 +44,7 @@ fn solve_pt1(lines: Vec<String>) -> usize {
         }
     }
 
-    return dfs(&mut valves, &mut closed, START_VALVE, MINUTES);
-}
-
-#[derive(Debug, Clone, Hash)]
-pub struct NodeKey {
-    name: String,
-    minute: usize,
-    opened: bool,
-}
-
-impl NodeKey {
-    pub fn new(name: &str, minute: usize, opened: bool) -> Self {
-        Self {
-            name: String::from(name),
-            minute: minute,
-            opened: opened,
-        }
-    }
-}
-
-#[derive(Debug, Clone)]
-pub struct Node {
-    added_flow: usize,
-    leads_to: Vec<NodeKey>,
-}
-
-fn build_graph_rec(
-    valves: &HashMap<String, RefCell<Valve>>,
-    m: &mut HashMap<NodeKey, RefCell<Node>>,
-    closed: &mut HashSet<String>,
-    name: &str,
-    minute: usize,
-) -> Vec<NodeKey> {
-    if minute == 0 {
-        return Vec::new();
-    }
-
-    if closed.len() == 0 {
-        return Vec::new();
-    }
-
-    let mut res: Vec<NodeKey> = Vec::new();
-    let curr = valves[name].borrow();
-    if minute > 0 && closed.contains(name) && curr.flow_rate > 0 {
-        let key = NodeKey::new(name, minute, true);
-        let curr_rate = curr.flow_rate * (minute - 1);
-        let mut without_open = closed.clone();
-        without_open.remove(name);
-        if minute > 1 {
-            for neighbor in &curr.leads_to {
-                for edge in build_graph_rec(valves, m, &mut closed.clone(), neighbor, minute - 2) {}
-            }
-        } else {
-            return res;
-        }
-    }
-
-    for neighbor in &curr.leads_to {}
-
-    return res;
-}
-
-fn build_graph(valves: &HashMap<String, RefCell<Valve>>) -> HashMap<NodeKey, RefCell<Node>> {
-    let mut opened: HashSet<String> = HashSet::new();
-    let mut m: HashMap<NodeKey, RefCell<Node>> = HashMap::new();
-    let mut closed: HashSet<String> = HashSet::new();
-    for (name, valve) in valves {
-        let valve = valve.borrow();
-        if valve.flow_rate > 0 {
-            closed.insert(name.clone());
-        }
-    }
-
-    build_graph_rec(valves, &mut m, &mut closed, START_VALVE, MINUTES);
-    return m;
+    return dfs(&mut valves, &mut closed, &dists);
 }
 
 #[derive(Debug, Clone)]
@@ -166,48 +98,214 @@ impl fmt::Display for Valve {
     }
 }
 
-fn dfs(
-    valves: &HashMap<String, RefCell<Valve>>,
-    closed: &mut HashSet<String>,
-    name: &str,
-    minutes: usize,
-) -> usize {
-    if minutes == 0 {
+#[derive(Debug, Clone)]
+pub struct State {
+    closed: HashSet<String>,
+    opened: Vec<(String, usize)>,
+    loc: String,
+    flow: usize,
+    minute: usize,
+    max_minutes: usize,
+}
+
+impl fmt::Display for State {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        write!(
+            f,
+            "State @ {} (elapsed = {}m) (flow = {})\n  - Opened: {:?}\n  - Closed {:?}",
+            self.loc, self.minute, self.flow, self.opened, self.closed,
+        )
+    }
+}
+
+fn dist(valves: &HashMap<String, RefCell<Valve>>, start: &str, end: &str) -> usize {
+    if start == end {
         return 0;
     }
-
-    if closed.len() == 0 {
-        return 0;
-    }
-
-    let can_open = minutes > 0 && closed.contains(name) && valves[name].borrow().flow_rate > 0;
-    let mut potentials: Vec<usize> = Vec::new();
-    if can_open {
-        let flow_rate = valves[name].borrow().flow_rate;
-        let curr_rate = flow_rate * (minutes - 1);
-        let mut without_open = closed.clone();
-        without_open.remove(name);
-        if minutes > 1 {
-            for neighbor in &valves[name].borrow().leads_to {
-                potentials.push(curr_rate + dfs(valves, &mut without_open, &neighbor, minutes - 2));
+    let mut visited: HashSet<String> = HashSet::new();
+    let mut to_visit: Vec<(String, usize)> = Vec::new();
+    to_visit.push((String::from(start), 0));
+    while to_visit.len() > 0 {
+        let (curr, partial_distance) = to_visit.pop().unwrap();
+        visited.insert(curr.clone());
+        for neighbor in &valves[&curr].borrow().leads_to {
+            if neighbor == end {
+                return partial_distance + 1;
             }
-        } else {
-            return curr_rate;
+            if !visited.contains(neighbor) {
+                visited.insert(neighbor.clone());
+                to_visit.push((String::from(neighbor), partial_distance + 1));
+            }
         }
     }
 
-    for neighbor in &valves[name].borrow().leads_to {
-        potentials.push(dfs(valves, &mut closed.clone(), &neighbor, minutes - 1));
+    assert!(false);
+    return 0;
+}
+
+fn get_dist(dists: &HashMap<String, usize>, start: &str, end: &str) -> usize {
+    if start == end {
+        return 0;
+    }
+    let key = match start.cmp(end) {
+        Ordering::Less | Ordering::Equal => format!("{}:{}", start, end),
+        Ordering::Greater => format!("{}:{}", end, start),
+    };
+    return dists[&key];
+}
+
+fn create_dist_grid(valves: &HashMap<String, RefCell<Valve>>) -> HashMap<String, usize> {
+    let mut dist_grid: HashMap<String, usize> = HashMap::new();
+    let mut keys: Vec<String> = Vec::new();
+    for k in valves.keys() {
+        keys.push(k.clone());
+    }
+    keys.sort();
+
+    for i in 0..keys.len() {
+        for j in i..keys.len() {
+            if (&keys[i] == START_VALVE || valves[&keys[i]].borrow().flow_rate > 0)
+                && valves[&keys[j]].borrow().flow_rate > 0
+            {
+                let distance = dist(valves, &keys[i], &keys[j]);
+                *dist_grid
+                    .entry(format!("{}:{}", keys[i], keys[j]))
+                    .or_insert(distance) = distance;
+            }
+        }
     }
 
-    let max_flow = *potentials.iter().max().unwrap();
-    println!(
-        "Valve {} can maximally release {} with {} minutes left | {:?}",
-        name, max_flow, minutes, closed
-    );
-    //for key in valves.keys() {
-    //    println!("{}: {}", key, valves[key].borrow());
-    //}
+    let mut keys: Vec<String> = Vec::new();
+    for k in dist_grid.keys() {
+        keys.push(k.clone());
+    }
+    keys.sort();
+    println!("Distances:");
+    for k in keys {
+        let parts = k.split(":").collect::<Vec<&str>>();
+        let flow_rate = valves[parts[1]].borrow().flow_rate;
+        let mut potential = 0;
+        if dist_grid[&k] <= MINUTES {
+            potential = (MINUTES - dist_grid[&k]) * flow_rate;
+        }
+        println!(
+            " - {} -> {} (flow={}): {} --> {}",
+            parts[0], parts[1], flow_rate, dist_grid[&k], potential,
+        );
+    }
+    return dist_grid;
+}
+
+impl State {
+    fn next(
+        &mut self,
+        valves: &HashMap<String, RefCell<Valve>>,
+        dists: &HashMap<String, usize>,
+        max_flow: usize,
+    ) -> Vec<State> {
+        if self.minute >= self.max_minutes {
+            return Vec::new();
+        }
+
+        if self.closed.len() == 0 {
+            return Vec::new();
+        }
+
+        let mut potential_max_flow = self.flow;
+        let mut mins_left = self.max_minutes - self.minute;
+        for closed in &self.closed {
+            let dist = get_dist(dists, self.loc.as_str(), closed.as_str());
+            if dist < mins_left {
+                potential_max_flow += valves[closed].borrow().flow_rate * (mins_left - dist);
+            }
+        }
+        if potential_max_flow <= max_flow {
+            println!(
+                "Potential is {}, which is less than max {}",
+                potential_max_flow, max_flow
+            );
+            return Vec::new();
+        }
+
+        let mut res: Vec<State> = Vec::new();
+        // Then we move onto the next valve.
+        for closed_valve in &self.closed {
+            if closed_valve == &self.loc {
+                continue;
+            }
+
+            let mut next = self.clone();
+            next.loc = closed_valve.clone();
+            let distance = get_dist(dists, &self.loc, closed_valve);
+            if distance > mins_left {
+                continue;
+            }
+            next.minute += distance;
+
+            // Open this valve if we can.
+            if next.closed.contains(&next.loc) && next.minute < next.max_minutes {
+                next.minute += 1;
+                mins_left = next.max_minutes - next.minute;
+                next.flow += valves[&next.loc].borrow().flow_rate * mins_left;
+                next.closed.remove(&next.loc);
+                next.opened.push((
+                    format!(
+                        "{} ({})",
+                        next.loc.clone(),
+                        valves[&next.loc].borrow().flow_rate
+                    ),
+                    next.minute,
+                ));
+                println!("open {}", next.loc);
+            }
+            res.push(next);
+        }
+
+        res.sort_by(|a, b| {
+            let by_flow = a.flow.cmp(&b.flow);
+            if by_flow != Ordering::Equal {
+                return by_flow;
+            }
+            let by_dist = b.minute.cmp(&a.minute);
+            return by_dist;
+        });
+        println!("......res");
+        for s in &res {
+            println!("...{}", s);
+        }
+
+        return res;
+    }
+}
+
+fn dfs(
+    valves: &HashMap<String, RefCell<Valve>>,
+    closed: &mut HashSet<String>,
+    dists: &HashMap<String, usize>,
+) -> usize {
+    let mut potentials: Vec<State> = Vec::new();
+    potentials.push(State {
+        closed: closed.clone(),
+        opened: Vec::new(),
+        loc: String::from(START_VALVE),
+        flow: 0,
+        minute: 0,
+        max_minutes: MINUTES,
+    });
+
+    let mut max_flow: usize = 0;
+    let mut curr: State;
+    while potentials.len() > 0 {
+        curr = potentials.pop().unwrap();
+        println!("MAX IS {}\n{}", max_flow, curr);
+        let next = curr.next(valves, dists, max_flow);
+        for n in &next {
+            if n.flow > max_flow {
+                max_flow = n.flow;
+            }
+            potentials.push(n.clone());
+        }
+    }
 
     return max_flow;
 }
@@ -230,8 +328,6 @@ mod tests {
 
     #[test]
     fn example_works() {
-        /*
-         */
         let mut input = Vec::from([
             "Valve AA has flow rate=0; tunnels lead to valves DD, II, BB",
             "Valve BB has flow rate=13; tunnels lead to valves CC, AA",
@@ -249,5 +345,32 @@ mod tests {
         .collect::<Vec<String>>();
 
         assert_eq!(1651, solve_pt1(input));
+    }
+
+    #[test]
+    fn dist_works() {
+        let lines = Vec::from([
+            "Valve AA has flow rate=0; tunnels lead to valves DD, II, BB",
+            "Valve BB has flow rate=13; tunnels lead to valves CC, AA",
+            "Valve CC has flow rate=2; tunnels lead to valves DD, BB",
+            "Valve DD has flow rate=20; tunnels lead to valves CC, AA, EE",
+            "Valve EE has flow rate=3; tunnels lead to valves FF, DD",
+            "Valve FF has flow rate=0; tunnels lead to valves EE, GG",
+            "Valve GG has flow rate=0; tunnels lead to valves FF, HH",
+            "Valve HH has flow rate=22; tunnel leads to valve GG",
+            "Valve II has flow rate=0; tunnels lead to valves AA, JJ",
+            "Valve JJ has flow rate=21; tunnel leads to valve II",
+        ])
+        .iter()
+        .map(|&s| String::from(s))
+        .collect::<Vec<String>>();
+        let mut valves: HashMap<String, RefCell<Valve>> = HashMap::new();
+        for line in &lines {
+            let (name, valve) = Valve::parse(&line);
+            valves.entry(name).or_insert(valve);
+        }
+
+        assert_eq!(7, dist(&valves, "JJ", "HH"));
+        assert_eq!(1, dist(&valves, "AA", "DD"));
     }
 }
