@@ -1,51 +1,36 @@
-use std::env;
 use std::fs::File;
 use std::io::{self, BufRead};
 use std::path::Path;
 
 fn main() {
-    // --snip--
-    let args: Vec<String> = env::args().collect();
-    let file_path: &str = &args[1];
-    let num_elves = args[2].parse::<i32>().unwrap();
-    println!("In file {}", file_path);
-
-    let mut v: Vec<i32> = Vec::new();
-    // File must exist in current path before this produces output
-    if let Ok(lines) = read_lines(file_path) {
-        // Consumes the iterator, returns an (Optional) String
-        let mut max = 0;
-        let mut elf = 0;
-        for line in lines {
-            if let Ok(ip) = line {
-                if ip == "" {
-                    if elf > max {
-                        max = elf;
-                    }
-                    v.push(elf);
-                    elf = 0;
-                } else {
-                    let calories = ip.parse::<i32>().unwrap();
-                    elf += calories;
-                }
+    let file_path = "tmp/day01/input.txt";
+    let mut max: [usize; 3] = [0, 0, 0];
+    let mut elf = 0;
+    for line in &read_lines(file_path) {
+        if line.len() == 0 {
+            let i = max
+                .iter()
+                .position(|u| u == max.iter().min().unwrap())
+                .unwrap();
+            if elf > max[i] {
+                max[i] = elf;
             }
+            elf = 0;
+            continue;
         }
-        println!("Most calories: {}", max);
+        elf += line.parse::<usize>().unwrap();
     }
-    v.sort();
-    let mut total = 0;
-    for i in v.len() - 3..v.len() {
-        total += v[i];
-    }
-    println!("Sum of {} elves: {} calories", num_elves, total);
+    println!("Part 1: {}", max.iter().max().unwrap());
+    println!("Part 2: {}", max.iter().sum::<usize>());
 }
 
-// The output is wrapped in a Result to allow matching on errors
-// Returns an Iterator to the Reader of the lines of the file.
-fn read_lines<P>(filename: P) -> io::Result<io::Lines<io::BufReader<File>>>
+fn read_lines<P>(filename: P) -> Vec<String>
 where
     P: AsRef<Path>,
 {
-    let file = File::open(filename)?;
-    Ok(io::BufReader::new(file).lines())
+    return io::BufReader::new(File::open(filename).expect("where is the file"))
+        .lines()
+        .filter(|x| x.is_ok())
+        .map(|x| x.expect("bad lines should be filtered"))
+        .collect::<Vec<String>>();
 }
