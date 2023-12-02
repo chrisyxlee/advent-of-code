@@ -1,0 +1,107 @@
+[package]
+name="advent-of-code-2023"
+version="0.1.0"
+include = ["src/*.rs"]
+description = "My solutions for the 2023 Advent of Code. https://adventofcode.com/2023"
+license = "MIT"
+documentation = "README.md"
+edition = "2021"
+
+[dependencies]
+regex = "1"
+
+[[bin]]
+name = "day01"
+path = "src/day01/main.rs"
+
+[[bin]]
+name = "day02"
+path = "src/day02/main.rs"
+
+[[bin]]
+name = "day03"
+path = "src/day03/main.rs"
+
+[[bin]]
+name = "day04"
+path = "src/day04/main.rs"
+
+[[bin]]
+name = "day05"
+path = "src/day05/main.rs"
+
+[[bin]]
+name = "day06"
+path = "src/day06/main.rs"
+
+[[bin]]
+name = "day07"
+path = "src/day07/main.rs"
+
+[[bin]]
+name = "day08"
+path = "src/day08/main.rs"
+
+[[bin]]
+name = "day09"
+path = "src/day09/main.rs"
+
+[[bin]]
+name = "day10"
+path = "src/day10/main.rs"
+
+[[bin]]
+name = "day11"
+path = "src/day11/main.rs"
+
+[[bin]]
+name = "day12"
+path = "src/day12/main.rs"
+
+[[bin]]
+name = "day13"
+path = "src/day13/main.rs"
+
+[[bin]]
+name = "day14"
+path = "src/day14/main.rs"
+
+[[bin]]
+name = "day15"
+path = "src/day15/main.rs"
+
+[[bin]]
+name = "day16"
+path = "src/day16/main.rs"
+
+[[bin]]
+name = "day17"
+path = "src/day17/main.rs"
+
+[[bin]]
+name = "day18"
+path = "src/day18/main.rs"
+
+[[bin]]
+name = "day19"
+path = "src/day19/main.rs"
+
+[[bin]]
+name = "day20"
+path = "src/day20/main.rs"
+
+[[bin]]
+name = "day21"
+path = "src/day21/main.rs"
+
+[[bin]]
+name = "day22"
+path = "src/day22/main.rs"
+
+[[bin]]
+name = "day23"
+path = "src/day23/main.rs"
+
+[[bin]]
+name = "day25"
+path = "src/day25/main.rs"
