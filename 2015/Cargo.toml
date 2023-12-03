@@ -1,6 +1,6 @@
 [package]
-name="advent-of-code-2023"
-version="0.1.0"
+name = "advent-of-code-2023"
+version = "0.1.0"
 include = ["src/*.rs"]
 description = "My solutions for the 2023 Advent of Code. https://adventofcode.com/2023"
 license = "MIT"
@@ -9,6 +9,7 @@ edition = "2021"
 
 [dependencies]
 regex = "1"
+md5 = "0.7.0"
 
 [[bin]]
 name = "day01"
