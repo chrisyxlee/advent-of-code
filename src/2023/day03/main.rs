@@ -2,6 +2,7 @@ use advent_of_code::utils::input::read_lines;
 use advent_of_code::utils::point::Point;
 use clap::Parser;
 use std::cell::RefCell;
+use std::collections::HashMap;
 use std::collections::HashSet;
 
 #[derive(Parser, Debug)]
@@ -18,6 +19,8 @@ fn main() {
 
     let pt1: i32 = handle_pt1(&lines);
     println!("Part 1: {}", pt1);
+    let pt2: i32 = handle_pt2(&lines);
+    println!("Part 2: {}", pt2);
 }
 
 fn handle_pt1(lines: &Vec<String>) -> i32 {
@@ -87,6 +90,74 @@ fn handle_pt1(lines: &Vec<String>) -> i32 {
     total
 }
 
+fn handle_pt2(lines: &Vec<String>) -> i32 {
+    let mut maybe_gears: Vec<Point<i32>> = Vec::new();
+    let mut parts: HashMap<Point<i32>, i32> = HashMap::new();
+
+    for (row, line) in lines.iter().enumerate() {
+        let mut current_part = MaybePart::new();
+
+        for (col, c) in line.chars().enumerate() {
+            let location = Point::<i32> {
+                x: row as i32,
+                y: col as i32,
+            };
+            if c.is_numeric() {
+                current_part.add(c, location);
+                continue;
+            }
+
+            if !current_part.empty() {
+                for location in current_part.locations.borrow().iter() {
+                    parts.insert(*location, current_part.val);
+                }
+                current_part = MaybePart::new();
+            }
+
+            if c == '*' {
+                maybe_gears.push(location);
+            }
+        }
+
+        if !current_part.empty() {
+            for location in current_part.locations.borrow().iter() {
+                parts.insert(*location, current_part.val);
+            }
+        }
+    }
+
+    //  maybe_parts.iter().map(|maybe_part| maybe_part.locations.iter().
+    let mut total = 0;
+    for gear in maybe_gears {
+        let mut adjacent_parts: Vec<i32> = Vec::new();
+        for (x, y) in [
+            (0, 1),
+            (1, 0),
+            (-1, 0),
+            (0, -1),
+            (1, 1),
+            (1, -1),
+            (-1, 1),
+            (-1, -1),
+        ] {
+            let location = Point::<i32> {
+                x: gear.x + x,
+                y: gear.y + y,
+            };
+            if let Some(val) = parts.get(&location) {
+                adjacent_parts.push(*val);
+            }
+        }
+
+        adjacent_parts.sort();
+        adjacent_parts.dedup();
+        if adjacent_parts.len() == 2 {
+            total += adjacent_parts[0] * adjacent_parts[1];
+        }
+    }
+    total
+}
+
 #[derive(Clone)]
 pub struct MaybePart {
     pub locations: RefCell<Vec<Point<i32>>>,
@@ -134,6 +205,39 @@ mod tests {
 
         for (input, want) in tests {
             assert_eq!(handle_pt1(&input), want, "for input\n{}", input.join("\n"));
+        }
+    }
+
+    #[test]
+    fn test_parsing_pt2() {
+        let tests = [
+            (
+                vec![
+                    String::from("467..114.."),
+                    String::from("...*......"),
+                    String::from("..35..633."),
+                    String::from("......#..."),
+                    String::from("617*......"),
+                    String::from(".....+.58."),
+                    String::from("..592....."),
+                    String::from("......755."),
+                    String::from("...$.*...."),
+                    String::from(".664.598.."),
+                ],
+                467_835,
+            ),
+            (
+                vec![
+                    String::from("..589"),
+                    String::from("..*.."),
+                    String::from("699.."),
+                ],
+                411_711,
+            ),
+        ];
+
+        for (input, want) in tests {
+            assert_eq!(handle_pt2(&input), want, "for input\n{}", input.join("\n"));
         }
     }
 }
