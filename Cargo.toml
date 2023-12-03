@@ -1,0 +1,884 @@
+[package]
+name = "advent-of-code"
+version = "0.1.0"
+description = "My solutions for the Advent of Code. https://adventofcode.com"
+license = "MIT"
+documentation = "README.md"
+edition = "2021"
+
+[dependencies]
+regex = "1"
+md5 = "0.7.0"
+clap = { version = "4.4.10", features = ["derive"] }
+
+
+[[bin]]
+name = "2015day01"
+path = "src/2015/day01/main.rs"
+
+[[bin]]
+name = "2015day02"
+path = "src/2015/day02/main.rs"
+
+[[bin]]
+name = "2015day03"
+path = "src/2015/day03/main.rs"
+
+[[bin]]
+name = "2015day04"
+path = "src/2015/day04/main.rs"
+
+[[bin]]
+name = "2015day05"
+path = "src/2015/day05/main.rs"
+
+[[bin]]
+name = "2015day06"
+path = "src/2015/day06/main.rs"
+
+[[bin]]
+name = "2015day07"
+path = "src/2015/day07/main.rs"
+
+[[bin]]
+name = "2015day08"
+path = "src/2015/day08/main.rs"
+
+[[bin]]
+name = "2015day09"
+path = "src/2015/day09/main.rs"
+
+[[bin]]
+name = "2015day10"
+path = "src/2015/day10/main.rs"
+
+[[bin]]
+name = "2015day11"
+path = "src/2015/day11/main.rs"
+
+[[bin]]
+name = "2015day12"
+path = "src/2015/day12/main.rs"
+
+[[bin]]
+name = "2015day13"
+path = "src/2015/day13/main.rs"
+
+[[bin]]
+name = "2015day14"
+path = "src/2015/day14/main.rs"
+
+[[bin]]
+name = "2015day15"
+path = "src/2015/day15/main.rs"
+
+[[bin]]
+name = "2015day16"
+path = "src/2015/day16/main.rs"
+
+[[bin]]
+name = "2015day17"
+path = "src/2015/day17/main.rs"
+
+[[bin]]
+name = "2015day18"
+path = "src/2015/day18/main.rs"
+
+[[bin]]
+name = "2015day19"
+path = "src/2015/day19/main.rs"
+
+[[bin]]
+name = "2015day20"
+path = "src/2015/day20/main.rs"
+
+[[bin]]
+name = "2015day21"
+path = "src/2015/day21/main.rs"
+
+[[bin]]
+name = "2015day22"
+path = "src/2015/day22/main.rs"
+
+[[bin]]
+name = "2015day23"
+path = "src/2015/day23/main.rs"
+
+[[bin]]
+name = "2015day25"
+path = "src/2015/day25/main.rs"
+
+
+[[bin]]
+name = "2016day01"
+path = "src/2016/day01/main.rs"
+
+[[bin]]
+name = "2016day02"
+path = "src/2016/day02/main.rs"
+
+[[bin]]
+name = "2016day03"
+path = "src/2016/day03/main.rs"
+
+[[bin]]
+name = "2016day04"
+path = "src/2016/day04/main.rs"
+
+[[bin]]
+name = "2016day05"
+path = "src/2016/day05/main.rs"
+
+[[bin]]
+name = "2016day06"
+path = "src/2016/day06/main.rs"
+
+[[bin]]
+name = "2016day07"
+path = "src/2016/day07/main.rs"
+
+[[bin]]
+name = "2016day08"
+path = "src/2016/day08/main.rs"
+
+[[bin]]
+name = "2016day09"
+path = "src/2016/day09/main.rs"
+
+[[bin]]
+name = "2016day10"
+path = "src/2016/day10/main.rs"
+
+[[bin]]
+name = "2016day11"
+path = "src/2016/day11/main.rs"
+
+[[bin]]
+name = "2016day12"
+path = "src/2016/day12/main.rs"
+
+[[bin]]
+name = "2016day13"
+path = "src/2016/day13/main.rs"
+
+[[bin]]
+name = "2016day14"
+path = "src/2016/day14/main.rs"
+
+[[bin]]
+name = "2016day15"
+path = "src/2016/day15/main.rs"
+
+[[bin]]
+name = "2016day16"
+path = "src/2016/day16/main.rs"
+
+[[bin]]
+name = "2016day17"
+path = "src/2016/day17/main.rs"
+
+[[bin]]
+name = "2016day18"
+path = "src/2016/day18/main.rs"
+
+[[bin]]
+name = "2016day19"
+path = "src/2016/day19/main.rs"
+
+[[bin]]
+name = "2016day20"
+path = "src/2016/day20/main.rs"
+
+[[bin]]
+name = "2016day21"
+path = "src/2016/day21/main.rs"
+
+[[bin]]
+name = "2016day22"
+path = "src/2016/day22/main.rs"
+
+[[bin]]
+name = "2016day23"
+path = "src/2016/day23/main.rs"
+
+[[bin]]
+name = "2016day25"
+path = "src/2016/day25/main.rs"
+
+
+[[bin]]
+name = "2017day01"
+path = "src/2017/day01/main.rs"
+
+[[bin]]
+name = "2017day02"
+path = "src/2017/day02/main.rs"
+
+[[bin]]
+name = "2017day03"
+path = "src/2017/day03/main.rs"
+
+[[bin]]
+name = "2017day04"
+path = "src/2017/day04/main.rs"
+
+[[bin]]
+name = "2017day05"
+path = "src/2017/day05/main.rs"
+
+[[bin]]
+name = "2017day06"
+path = "src/2017/day06/main.rs"
+
+[[bin]]
+name = "2017day07"
+path = "src/2017/day07/main.rs"
+
+[[bin]]
+name = "2017day08"
+path = "src/2017/day08/main.rs"
+
+[[bin]]
+name = "2017day09"
+path = "src/2017/day09/main.rs"
+
+[[bin]]
+name = "2017day10"
+path = "src/2017/day10/main.rs"
+
+[[bin]]
+name = "2017day11"
+path = "src/2017/day11/main.rs"
+
+[[bin]]
+name = "2017day12"
+path = "src/2017/day12/main.rs"
+
+[[bin]]
+name = "2017day13"
+path = "src/2017/day13/main.rs"
+
+[[bin]]
+name = "2017day14"
+path = "src/2017/day14/main.rs"
+
+[[bin]]
+name = "2017day15"
+path = "src/2017/day15/main.rs"
+
+[[bin]]
+name = "2017day16"
+path = "src/2017/day16/main.rs"
+
+[[bin]]
+name = "2017day17"
+path = "src/2017/day17/main.rs"
+
+[[bin]]
+name = "2017day18"
+path = "src/2017/day18/main.rs"
+
+[[bin]]
+name = "2017day19"
+path = "src/2017/day19/main.rs"
+
+[[bin]]
+name = "2017day20"
+path = "src/2017/day20/main.rs"
+
+[[bin]]
+name = "2017day21"
+path = "src/2017/day21/main.rs"
+
+[[bin]]
+name = "2017day22"
+path = "src/2017/day22/main.rs"
+
+[[bin]]
+name = "2017day23"
+path = "src/2017/day23/main.rs"
+
+[[bin]]
+name = "2017day25"
+path = "src/2017/day25/main.rs"
+
+
+[[bin]]
+name = "2018day01"
+path = "src/2018/day01/main.rs"
+
+[[bin]]
+name = "2018day02"
+path = "src/2018/day02/main.rs"
+
+[[bin]]
+name = "2018day03"
+path = "src/2018/day03/main.rs"
+
+[[bin]]
+name = "2018day04"
+path = "src/2018/day04/main.rs"
+
+[[bin]]
+name = "2018day05"
+path = "src/2018/day05/main.rs"
+
+[[bin]]
+name = "2018day06"
+path = "src/2018/day06/main.rs"
+
+[[bin]]
+name = "2018day07"
+path = "src/2018/day07/main.rs"
+
+[[bin]]
+name = "2018day08"
+path = "src/2018/day08/main.rs"
+
+[[bin]]
+name = "2018day09"
+path = "src/2018/day09/main.rs"
+
+[[bin]]
+name = "2018day10"
+path = "src/2018/day10/main.rs"
+
+[[bin]]
+name = "2018day11"
+path = "src/2018/day11/main.rs"
+
+[[bin]]
+name = "2018day12"
+path = "src/2018/day12/main.rs"
+
+[[bin]]
+name = "2018day13"
+path = "src/2018/day13/main.rs"
+
+[[bin]]
+name = "2018day14"
+path = "src/2018/day14/main.rs"
+
+[[bin]]
+name = "2018day15"
+path = "src/2018/day15/main.rs"
+
+[[bin]]
+name = "2018day16"
+path = "src/2018/day16/main.rs"
+
+[[bin]]
+name = "2018day17"
+path = "src/2018/day17/main.rs"
+
+[[bin]]
+name = "2018day18"
+path = "src/2018/day18/main.rs"
+
+[[bin]]
+name = "2018day19"
+path = "src/2018/day19/main.rs"
+
+[[bin]]
+name = "2018day20"
+path = "src/2018/day20/main.rs"
+
+[[bin]]
+name = "2018day21"
+path = "src/2018/day21/main.rs"
+
+[[bin]]
+name = "2018day22"
+path = "src/2018/day22/main.rs"
+
+[[bin]]
+name = "2018day23"
+path = "src/2018/day23/main.rs"
+
+[[bin]]
+name = "2018day25"
+path = "src/2018/day25/main.rs"
+
+
+[[bin]]
+name = "2019day01"
+path = "src/2019/day01/main.rs"
+
+[[bin]]
+name = "2019day02"
+path = "src/2019/day02/main.rs"
+
+[[bin]]
+name = "2019day03"
+path = "src/2019/day03/main.rs"
+
+[[bin]]
+name = "2019day04"
+path = "src/2019/day04/main.rs"
+
+[[bin]]
+name = "2019day05"
+path = "src/2019/day05/main.rs"
+
+[[bin]]
+name = "2019day06"
+path = "src/2019/day06/main.rs"
+
+[[bin]]
+name = "2019day07"
+path = "src/2019/day07/main.rs"
+
+[[bin]]
+name = "2019day08"
+path = "src/2019/day08/main.rs"
+
+[[bin]]
+name = "2019day09"
+path = "src/2019/day09/main.rs"
+
+[[bin]]
+name = "2019day10"
+path = "src/2019/day10/main.rs"
+
+[[bin]]
+name = "2019day11"
+path = "src/2019/day11/main.rs"
+
+[[bin]]
+name = "2019day12"
+path = "src/2019/day12/main.rs"
+
+[[bin]]
+name = "2019day13"
+path = "src/2019/day13/main.rs"
+
+[[bin]]
+name = "2019day14"
+path = "src/2019/day14/main.rs"
+
+[[bin]]
+name = "2019day15"
+path = "src/2019/day15/main.rs"
+
+[[bin]]
+name = "2019day16"
+path = "src/2019/day16/main.rs"
+
+[[bin]]
+name = "2019day17"
+path = "src/2019/day17/main.rs"
+
+[[bin]]
+name = "2019day18"
+path = "src/2019/day18/main.rs"
+
+[[bin]]
+name = "2019day19"
+path = "src/2019/day19/main.rs"
+
+[[bin]]
+name = "2019day20"
+path = "src/2019/day20/main.rs"
+
+[[bin]]
+name = "2019day21"
+path = "src/2019/day21/main.rs"
+
+[[bin]]
+name = "2019day22"
+path = "src/2019/day22/main.rs"
+
+[[bin]]
+name = "2019day23"
+path = "src/2019/day23/main.rs"
+
+[[bin]]
+name = "2019day25"
+path = "src/2019/day25/main.rs"
+
+
+[[bin]]
+name = "2020day01"
+path = "src/2020/day01/main.rs"
+
+[[bin]]
+name = "2020day02"
+path = "src/2020/day02/main.rs"
+
+[[bin]]
+name = "2020day03"
+path = "src/2020/day03/main.rs"
+
+[[bin]]
+name = "2020day04"
+path = "src/2020/day04/main.rs"
+
+[[bin]]
+name = "2020day05"
+path = "src/2020/day05/main.rs"
+
+[[bin]]
+name = "2020day06"
+path = "src/2020/day06/main.rs"
+
+[[bin]]
+name = "2020day07"
+path = "src/2020/day07/main.rs"
+
+[[bin]]
+name = "2020day08"
+path = "src/2020/day08/main.rs"
+
+[[bin]]
+name = "2020day09"
+path = "src/2020/day09/main.rs"
+
+[[bin]]
+name = "2020day10"
+path = "src/2020/day10/main.rs"
+
+[[bin]]
+name = "2020day11"
+path = "src/2020/day11/main.rs"
+
+[[bin]]
+name = "2020day12"
+path = "src/2020/day12/main.rs"
+
+[[bin]]
+name = "2020day13"
+path = "src/2020/day13/main.rs"
+
+[[bin]]
+name = "2020day14"
+path = "src/2020/day14/main.rs"
+
+[[bin]]
+name = "2020day15"
+path = "src/2020/day15/main.rs"
+
+[[bin]]
+name = "2020day16"
+path = "src/2020/day16/main.rs"
+
+[[bin]]
+name = "2020day17"
+path = "src/2020/day17/main.rs"
+
+[[bin]]
+name = "2020day18"
+path = "src/2020/day18/main.rs"
+
+[[bin]]
+name = "2020day19"
+path = "src/2020/day19/main.rs"
+
+[[bin]]
+name = "2020day20"
+path = "src/2020/day20/main.rs"
+
+[[bin]]
+name = "2020day21"
+path = "src/2020/day21/main.rs"
+
+[[bin]]
+name = "2020day22"
+path = "src/2020/day22/main.rs"
+
+[[bin]]
+name = "2020day23"
+path = "src/2020/day23/main.rs"
+
+[[bin]]
+name = "2020day25"
+path = "src/2020/day25/main.rs"
+
+
+[[bin]]
+name = "2021day01"
+path = "src/2021/day01/main.rs"
+
+[[bin]]
+name = "2021day02"
+path = "src/2021/day02/main.rs"
+
+[[bin]]
+name = "2021day03"
+path = "src/2021/day03/main.rs"
+
+[[bin]]
+name = "2021day04"
+path = "src/2021/day04/main.rs"
+
+[[bin]]
+name = "2021day05"
+path = "src/2021/day05/main.rs"
+
+[[bin]]
+name = "2021day06"
+path = "src/2021/day06/main.rs"
+
+[[bin]]
+name = "2021day07"
+path = "src/2021/day07/main.rs"
+
+[[bin]]
+name = "2021day08"
+path = "src/2021/day08/main.rs"
+
+[[bin]]
+name = "2021day09"
+path = "src/2021/day09/main.rs"
+
+[[bin]]
+name = "2021day10"
+path = "src/2021/day10/main.rs"
+
+[[bin]]
+name = "2021day11"
+path = "src/2021/day11/main.rs"
+
+[[bin]]
+name = "2021day12"
+path = "src/2021/day12/main.rs"
+
+[[bin]]
+name = "2021day13"
+path = "src/2021/day13/main.rs"
+
+[[bin]]
+name = "2021day14"
+path = "src/2021/day14/main.rs"
+
+[[bin]]
+name = "2021day15"
+path = "src/2021/day15/main.rs"
+
+[[bin]]
+name = "2021day16"
+path = "src/2021/day16/main.rs"
+
+[[bin]]
+name = "2021day17"
+path = "src/2021/day17/main.rs"
+
+[[bin]]
+name = "2021day18"
+path = "src/2021/day18/main.rs"
+
+[[bin]]
+name = "2021day19"
+path = "src/2021/day19/main.rs"
+
+[[bin]]
+name = "2021day20"
+path = "src/2021/day20/main.rs"
+
+[[bin]]
+name = "2021day21"
+path = "src/2021/day21/main.rs"
+
+[[bin]]
+name = "2021day22"
+path = "src/2021/day22/main.rs"
+
+[[bin]]
+name = "2021day23"
+path = "src/2021/day23/main.rs"
+
+[[bin]]
+name = "2021day25"
+path = "src/2021/day25/main.rs"
+
+
+[[bin]]
+name = "2022day01"
+path = "src/2022/day01/main.rs"
+
+[[bin]]
+name = "2022day02"
+path = "src/2022/day02/main.rs"
+
+[[bin]]
+name = "2022day03"
+path = "src/2022/day03/main.rs"
+
+[[bin]]
+name = "2022day04"
+path = "src/2022/day04/main.rs"
+
+[[bin]]
+name = "2022day05"
+path = "src/2022/day05/main.rs"
+
+[[bin]]
+name = "2022day06"
+path = "src/2022/day06/main.rs"
+
+[[bin]]
+name = "2022day07"
+path = "src/2022/day07/main.rs"
+
+[[bin]]
+name = "2022day08"
+path = "src/2022/day08/main.rs"
+
+[[bin]]
+name = "2022day09"
+path = "src/2022/day09/main.rs"
+
+[[bin]]
+name = "2022day10"
+path = "src/2022/day10/main.rs"
+
+[[bin]]
+name = "2022day11"
+path = "src/2022/day11/main.rs"
+
+[[bin]]
+name = "2022day12"
+path = "src/2022/day12/main.rs"
+
+[[bin]]
+name = "2022day13"
+path = "src/2022/day13/main.rs"
+
+[[bin]]
+name = "2022day14"
+path = "src/2022/day14/main.rs"
+
+[[bin]]
+name = "2022day15"
+path = "src/2022/day15/main.rs"
+
+[[bin]]
+name = "2022day16"
+path = "src/2022/day16/main.rs"
+
+[[bin]]
+name = "2022day17"
+path = "src/2022/day17/main.rs"
+
+[[bin]]
+name = "2022day18"
+path = "src/2022/day18/main.rs"
+
+[[bin]]
+name = "2022day19"
+path = "src/2022/day19/main.rs"
+
+[[bin]]
+name = "2022day20"
+path = "src/2022/day20/main.rs"
+
+[[bin]]
+name = "2022day21"
+path = "src/2022/day21/main.rs"
+
+[[bin]]
+name = "2022day22"
+path = "src/2022/day22/main.rs"
+
+[[bin]]
+name = "2022day23"
+path = "src/2022/day23/main.rs"
+
+[[bin]]
+name = "2022day25"
+path = "src/2022/day25/main.rs"
+
+[[bin]]
+name = "2023day01"
+path = "src/2023/day01/main.rs"
+
+[[bin]]
+name = "2023day02"
+path = "src/2023/day02/main.rs"
+
+[[bin]]
+name = "2023day03"
+path = "src/2023/day03/main.rs"
+
+[[bin]]
+name = "2023day04"
+path = "src/2023/day04/main.rs"
+
+[[bin]]
+name = "2023day05"
+path = "src/2023/day05/main.rs"
+
+[[bin]]
+name = "2023day06"
+path = "src/2023/day06/main.rs"
+
+[[bin]]
+name = "2023day07"
+path = "src/2023/day07/main.rs"
+
+[[bin]]
+name = "2023day08"
+path = "src/2023/day08/main.rs"
+
+[[bin]]
+name = "2023day09"
+path = "src/2023/day09/main.rs"
+
+[[bin]]
+name = "2023day10"
+path = "src/2023/day10/main.rs"
+
+[[bin]]
+name = "2023day11"
+path = "src/2023/day11/main.rs"
+
+[[bin]]
+name = "2023day12"
+path = "src/2023/day12/main.rs"
+
+[[bin]]
+name = "2023day13"
+path = "src/2023/day13/main.rs"
+
+[[bin]]
+name = "2023day14"
+path = "src/2023/day14/main.rs"
+
+[[bin]]
+name = "2023day15"
+path = "src/2023/day15/main.rs"
+
+[[bin]]
+name = "2023day16"
+path = "src/2023/day16/main.rs"
+
+[[bin]]
+name = "2023day17"
+path = "src/2023/day17/main.rs"
+
+[[bin]]
+name = "2023day18"
+path = "src/2023/day18/main.rs"
+
+[[bin]]
+name = "2023day19"
+path = "src/2023/day19/main.rs"
+
+[[bin]]
+name = "2023day20"
+path = "src/2023/day20/main.rs"
+
+[[bin]]
+name = "2023day21"
+path = "src/2023/day21/main.rs"
+
+[[bin]]
+name = "2023day22"
+path = "src/2023/day22/main.rs"
+
+[[bin]]
+name = "2023day23"
+path = "src/2023/day23/main.rs"
+
+[[bin]]
+name = "2023day25"
+path = "src/2023/day25/main.rs"
