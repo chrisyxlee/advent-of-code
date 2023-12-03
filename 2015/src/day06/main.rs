@@ -1,4 +1,5 @@
 use regex::Regex;
+use std::collections::HashMap;
 use std::fmt;
 use std::fs::File;
 use std::io::{self, BufRead};
@@ -10,6 +11,8 @@ fn main() {
     let instructions: Vec<(&str, Point, Point)> = lines.iter().map(|x| parse_line(x)).collect();
     let pt1 = handle_pt1(&instructions);
     println!("Part 1: {}", pt1);
+    let pt2 = handle_pt2(&instructions);
+    println!("Part 2: {}", pt2);
 }
 
 fn parse_line(s: &str) -> (&str, Point, Point) {
@@ -65,6 +68,44 @@ fn handle_pt1(instructions: &Vec<(&str, Point, Point)>) -> i32 {
     grid.iter()
         .map(|rows| rows.iter().map(|x| *x as i32).sum::<i32>())
         .sum::<i32>()
+}
+
+fn handle_pt2(instructions: &Vec<(&str, Point, Point)>) -> i32 {
+    let mut grid: HashMap<Point, i32> = HashMap::new();
+
+    for (action, start, end) in instructions {
+        for x in start.x..=end.x {
+            for y in start.y..=end.y {
+                let curr = Point::new(x, y);
+                let mut brightness = 0;
+                if let Some(b) = grid.get(&curr) {
+                    brightness = *b;
+                }
+
+                brightness += match *action {
+                    "turn on" => 1,
+                    "toggle" => 2,
+                    "turn off" => -1,
+                    _ => 0,
+                };
+                if brightness < 0 {
+                    brightness = 0;
+                }
+                *grid.entry(curr).or_insert(brightness) = brightness;
+            }
+        }
+    }
+
+    let mut total = 0;
+    for x in 0..=1000 {
+        for y in 0..=1000 {
+            if let Some(brightness) = grid.get(&Point::new(x, y)) {
+                total += brightness;
+            }
+        }
+    }
+
+    total
 }
 
 // To make it easier not to mess up x and y.
@@ -124,6 +165,27 @@ mod tests {
                 input.iter().map(|x| parse_line(x)).collect();
             assert_eq!(
                 handle_pt1(&instructions),
+                want,
+                "for input {}",
+                input.join(" -> ")
+            );
+        }
+    }
+
+    #[test]
+    fn test_parsing_pt2() {
+        let tests = [
+            (["turn on 0,0 through 0,0"], 1),
+            (["turn on 0,0 through 999,999"], 1_000_000),
+            (["toggle 0,0 through 999,0"], 2_000),
+            (["turn off 499,499 through 500,500"], 0),
+        ];
+
+        for (input, want) in tests {
+            let instructions: Vec<(&str, Point, Point)> =
+                input.iter().map(|x| parse_line(x)).collect();
+            assert_eq!(
+                handle_pt2(&instructions),
                 want,
                 "for input {}",
                 input.join(" -> ")
