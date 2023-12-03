@@ -9,6 +9,8 @@ fn main() {
     let lines = &read_lines(file_path);
     let pt1: usize = lines.iter().map(|x| handle_pt1(x)).sum();
     println!("Part 1: {}", pt1);
+    let pt2: usize = lines.iter().map(|x| handle_pt2(x)).sum();
+    println!("Part 2: {}", pt2);
 }
 
 fn handle_pt1(s: &str) -> usize {
@@ -16,11 +18,27 @@ fn handle_pt1(s: &str) -> usize {
 
     let mut curr = Point::new(0, 0);
     set.insert(curr);
-    println!("curr = {} init", curr);
     for c in s.chars().into_iter() {
         curr = curr.next(c);
-        println!("curr = {} after {}", curr, c);
         set.insert(curr);
+    }
+
+    return set.len();
+}
+
+fn handle_pt2(s: &str) -> usize {
+    let mut set: HashSet<Point> = HashSet::new();
+    let mut santa = Point::new(0, 0);
+    let mut robo = Point::new(0, 0);
+    set.insert(santa);
+    for (i, c) in s.chars().enumerate().into_iter() {
+        if i % 2 == 0 {
+            santa = santa.next(c);
+            set.insert(santa);
+        } else {
+            robo = robo.next(c);
+            set.insert(robo);
+        }
     }
 
     return set.len();
@@ -76,6 +94,15 @@ mod tests {
 
         for (input, want) in tests {
             assert_eq!(handle_pt1(input), want, "for input {}", input);
+        }
+    }
+
+    #[test]
+    fn test_parsing_pt2() {
+        let tests = [("^v", 3), ("^>v<", 3), ("^v^v^v^v^v", 11)];
+
+        for (input, want) in tests {
+            assert_eq!(handle_pt2(input), want, "for input {}", input);
         }
     }
 }
