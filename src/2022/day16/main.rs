@@ -16,8 +16,9 @@ struct Args {
 }
 
 fn main() {
-    let args = Args::parse();
-    let lines = read_lines(args.input);
+   Time:        41     96     88     94
+Distance:   214   1789   1127   1055
+
 
     {
         // 1180 is too low.
