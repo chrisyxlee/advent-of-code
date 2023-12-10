@@ -19,8 +19,11 @@ fn main() {
 
     let pt1: i32 = handle_pt1(&lines);
     println!("Part 1: {}", pt1);
-    //  let pt2: i32 = handle_pt2(&lines);
-    //  println!("Part 2: {}", pt2);
+    let pt2: i32 = handle_pt2(&lines);
+    // 172 too low
+    // 730 too high
+    // 600 too high
+    println!("Part 2: {}", pt2);
 }
 
 fn dir(p: Point<i32>, x: i32, y: i32) -> Point<i32> {
@@ -186,17 +189,10 @@ fn both_within_bounds(p: TraversablePoint, width: i32, height: i32) -> bool {
 fn handle_pt2(lines: &Vec<String>) -> i32 {
     let height = lines.len() as i32 + 2;
     let width = lines.iter().map(|line| line.len()).max().unwrap() as i32 + 2;
-    println!("new height is {}, new width is {}", height, width);
-
-    let total_ground = lines
-        .iter()
-        .map(|line| line.chars().filter(|c| *c == '.').count())
-        .sum::<usize>() as i32
-        + height * 2
-        + width * 2
-        - 4;
+    //  println!("new height is {}, new width is {}", height, width);
 
     let mut grid: HashMap<Point<i32>, char> = HashMap::new();
+    let mut start: Point<i32> = Point { x: 0, y: 0 };
     for (mut row, line) in lines.iter().enumerate() {
         row = row + 1;
         for (mut col, shape) in line.chars().enumerate() {
@@ -205,6 +201,10 @@ fn handle_pt2(lines: &Vec<String>) -> i32 {
                 x: col as i32,
                 y: lines.len() as i32 - row as i32 + 1,
             };
+            match shape {
+                'S' => start = p,
+                _ => {}
+            }
             grid.insert(p, shape);
         }
     }
@@ -223,7 +223,31 @@ fn handle_pt2(lines: &Vec<String>) -> i32 {
         );
     }
 
-    let mut touched = 0;
+    let mut loop_bounds: HashSet<Point<i32>> = HashSet::new();
+    loop_bounds.insert(start);
+    let mut queue: Vec<Point<i32>> = vec![start];
+    while !queue.is_empty() {
+        let current = queue.remove(0);
+        queue.append(
+            &mut get_neighbors(&grid, current)
+                .clone()
+                .into_iter()
+                .filter(|x| !loop_bounds.contains(x))
+                .collect::<Vec<Point<i32>>>(),
+        );
+
+        loop_bounds.insert(current);
+    }
+
+    for r in (0..height).rev() {
+        for c in 0..width {
+            let p = Point { x: c, y: r };
+            if !loop_bounds.contains(&p) {
+                grid.entry(p).and_modify(|e| *e = '.');
+            }
+        }
+    }
+
     let mut connected: HashSet<Point<i32>> = HashSet::new();
     let mut visited: HashSet<TraversablePoint> = HashSet::new();
     let mut queue: Vec<TraversablePoint> = vec![TraversablePoint {
@@ -239,7 +263,7 @@ fn handle_pt2(lines: &Vec<String>) -> i32 {
         if visited.contains(&current) {
             continue;
         }
-        println!("at {}", current);
+        //   println!("at {}", current);
 
         let n = north(current.a);
         let nw = west(n);
@@ -253,7 +277,7 @@ fn handle_pt2(lines: &Vec<String>) -> i32 {
         if let Some(b) = current.b {
             let a = current.a;
             if is_connected(&grid, a, b) {
-                println!("  is connected -- skipping");
+                //  println!("  is connected -- skipping");
                 continue;
             }
 
@@ -314,11 +338,9 @@ fn handle_pt2(lines: &Vec<String>) -> i32 {
                 ]);
             }
         } else {
-            let shape = grid.get(&current.a).unwrap();
-            if *shape == '.' {
-                println!("touching at {}", current);
+            if !loop_bounds.contains(&current.a) {
+                //  println!("touching at {}", current);
                 connected.insert(current.a);
-                touched += 1;
 
                 let mut neighbors = vec![
                     TraversablePoint { a: n, b: None },
@@ -334,14 +356,14 @@ fn handle_pt2(lines: &Vec<String>) -> i32 {
                     TraversablePoint { a: w, b: Some(nw) },
                     TraversablePoint { a: w, b: Some(sw) },
                 ];
-                println!(
-                    "  adding {}",
-                    neighbors
-                        .iter()
-                        .map(|x| x.to_string())
-                        .collect::<Vec<String>>()
-                        .join(" | ")
-                );
+                //  println!(
+                //      "  adding {}",
+                //      neighbors
+                //          .iter()
+                //          .map(|x| x.to_string())
+                //          .collect::<Vec<String>>()
+                //          .join(" | ")
+                //  );
                 queue.append(&mut neighbors);
             }
         }
@@ -349,34 +371,26 @@ fn handle_pt2(lines: &Vec<String>) -> i32 {
         visited.insert(current);
     }
 
-    println!(
-        "total ground = {}, touched = {}, therefore = {}",
-        total_ground,
-        touched,
-        total_ground - touched
-    );
-
+    let mut enclosed = 0;
     for r in (0..height).rev() {
         for c in 0..width {
             let p = Point { x: c, y: r };
-            if let Some(v) = grid.get(&p) {
-                if *v == '.' {
-                    if connected.contains(&p) {
-                        print!("O");
-                    } else {
-                        print!("I");
-                    }
-                } else {
-                    print!("{}", v);
-                }
+            if !loop_bounds.contains(&p) && !connected.contains(&p) {
+                enclosed += 1;
+            }
+            let v = grid.get(&p).unwrap();
+            if loop_bounds.contains(&p) {
+                print!("{}", v);
+            } else if connected.contains(&p) {
+                print!(".");
             } else {
-                println!("{} HAS NO VALUE", p);
+                print!("I");
             }
         }
         println!("");
     }
 
-    total_ground - touched
+    enclosed
 }
 
 #[cfg(test)]
@@ -418,7 +432,7 @@ mod tests {
         let tests = [
             (
                 vec![
-                    String::from("F--7"),
+                    String::from("S--7"),
                     String::from("|..|"),
                     String::from("L--J"),
                 ],
