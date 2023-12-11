@@ -73,26 +73,6 @@ fn get_neighbors(grid: &HashMap<Point<i32>, char>, point: Point<i32>) -> Vec<Poi
         .collect::<Vec<Point<i32>>>()
 }
 
-fn is_connected(grid: &HashMap<Point<i32>, char>, a: Point<i32>, b: Point<i32>) -> bool {
-    if let Some(a_shape) = grid.get(&a) {
-        if !connections(a, *a_shape).contains(&b) {
-            return false;
-        }
-    } else {
-        return false;
-    }
-
-    if let Some(b_shape) = grid.get(&b) {
-        if !connections(b, *b_shape).contains(&a) {
-            return false;
-        }
-    } else {
-        return false;
-    }
-
-    return true;
-}
-
 fn handle_pt1(lines: &Vec<String>) -> i32 {
     let mut grid: HashMap<Point<i32>, char> = HashMap::new();
     let mut start: Point<i32> = Point { x: 0, y: 0 };
@@ -177,29 +157,68 @@ impl fmt::Display for TraversablePoint {
     }
 }
 
-fn within_bounds(p: Point<i32>, width: i32, height: i32) -> bool {
-    !(p.x < 0 || p.y < 0 || p.x >= width || p.y >= height)
-}
+fn in_loop(loop_bounds: &HashSet<Point<i32>>, height: i32, width: i32, point: Point<i32>) -> bool {
+    println!("for point {}", point);
+    let mut p = point;
+    let mut cross = 0;
+    let mut inside = true;
+    while p.x < width {
+        p = east(p);
+        if loop_bounds.contains(&p) {
+            cross += 1;
+        }
+    }
+    println!("  east = {}", cross);
+    inside = inside && cross % 2 == 1;
 
-fn both_within_bounds(p: TraversablePoint, width: i32, height: i32) -> bool {
-    within_bounds(p.a, width, height)
-        && (p.b.is_none() || within_bounds(p.b.unwrap(), width, height))
+    p = point;
+    cross = 0;
+    while p.x >= 0 {
+        p = west(p);
+        if loop_bounds.contains(&p) {
+            cross += 1;
+        }
+    }
+    println!("  west = {}", cross);
+    inside = inside && cross % 2 == 1;
+
+    p = point;
+    cross = 0;
+    while p.y >= 0 {
+        p = south(p);
+        if loop_bounds.contains(&p) {
+            cross += 1;
+        }
+    }
+    println!("  south = {}", cross);
+    inside = inside && cross % 2 == 1;
+
+    p = point;
+    cross = 0;
+    while p.y < height {
+        p = north(p);
+        if loop_bounds.contains(&p) {
+            cross += 1;
+        }
+    }
+    println!("  north = {}", cross);
+    inside = inside && cross % 2 == 1;
+
+    inside
 }
 
 fn handle_pt2(lines: &Vec<String>) -> i32 {
-    let height = lines.len() as i32 + 2;
-    let width = lines.iter().map(|line| line.len()).max().unwrap() as i32 + 2;
+    let height = lines.len() as i32;
+    let width = lines.iter().map(|line| line.len()).max().unwrap() as i32;
     //  println!("new height is {}, new width is {}", height, width);
 
     let mut grid: HashMap<Point<i32>, char> = HashMap::new();
     let mut start: Point<i32> = Point { x: 0, y: 0 };
-    for (mut row, line) in lines.iter().enumerate() {
-        row = row + 1;
-        for (mut col, shape) in line.chars().enumerate() {
-            col = col + 1;
+    for (row, line) in lines.iter().enumerate() {
+        for (col, shape) in line.chars().enumerate() {
             let p = Point {
                 x: col as i32,
-                y: lines.len() as i32 - row as i32 + 1,
+                y: lines.len() as i32 - row as i32 - 1,
             };
             match shape {
                 'S' => start = p,
@@ -208,29 +227,14 @@ fn handle_pt2(lines: &Vec<String>) -> i32 {
             grid.insert(p, shape);
         }
     }
-    for r in 0..height {
-        grid.insert(Point { x: 0, y: r }, '.');
-        grid.insert(Point { x: width - 1, y: r }, '.');
-    }
-    for c in 0..width {
-        grid.insert(Point { x: c, y: 0 }, '.');
-        grid.insert(
-            Point {
-                x: c,
-                y: height - 1,
-            },
-            '.',
-        );
-    }
 
     let mut loop_bounds: HashSet<Point<i32>> = HashSet::new();
     loop_bounds.insert(start);
     let mut queue: Vec<Point<i32>> = vec![start];
     while !queue.is_empty() {
-        let current = queue.remove(0);
+        let current = queue.pop().unwrap();
         queue.append(
             &mut get_neighbors(&grid, current)
-                .clone()
                 .into_iter()
                 .filter(|x| !loop_bounds.contains(x))
                 .collect::<Vec<Point<i32>>>(),
@@ -239,158 +243,53 @@ fn handle_pt2(lines: &Vec<String>) -> i32 {
         loop_bounds.insert(current);
     }
 
-    for r in (0..height).rev() {
+    // Remove the non-loop points.
+    for r in 0..height {
         for c in 0..width {
             let p = Point { x: c, y: r };
             if !loop_bounds.contains(&p) {
-                grid.entry(p).and_modify(|e| *e = '.');
+                if let Some(shape) = grid.get(&p) {
+                    if *shape != '.' {
+                        grid.entry(p).and_modify(|e| *e = '.');
+                    }
+                }
             }
         }
     }
 
-    let mut connected: HashSet<Point<i32>> = HashSet::new();
-    let mut visited: HashSet<TraversablePoint> = HashSet::new();
-    let mut queue: Vec<TraversablePoint> = vec![TraversablePoint {
-        a: Point { x: 0, y: 0 },
-        b: None,
-    }];
-    while !queue.is_empty() {
-        let current = queue.pop().unwrap();
-        if !both_within_bounds(current, width, height) {
-            continue;
-        }
-
-        if visited.contains(&current) {
-            continue;
-        }
-        //   println!("at {}", current);
-
-        let n = north(current.a);
-        let nw = west(n);
-        let ne = east(n);
-        let e = east(current.a);
-        let se = south(e);
-        let s = south(current.a);
-        let sw = west(s);
-        let w = west(current.a);
-
-        if let Some(b) = current.b {
-            let a = current.a;
-            if is_connected(&grid, a, b) {
-                //  println!("  is connected -- skipping");
+    let mut inside_points: HashSet<Point<i32>> = HashSet::new();
+    let mut inside_count = 0;
+    for r in 0..height {
+        for c in 0..width {
+            let p = Point { x: c, y: r };
+            if loop_bounds.contains(&p) {
+                println!("loop bounds contains, skipping point {}", p);
                 continue;
             }
 
-            let x_diff = a.x - b.x;
-            if x_diff == 0 {
-                queue.append(&mut vec![
-                    TraversablePoint {
-                        a: west(a),
-                        b: None,
-                    },
-                    TraversablePoint {
-                        a: east(a),
-                        b: None,
-                    },
-                    TraversablePoint {
-                        a: west(b),
-                        b: None,
-                    },
-                    TraversablePoint {
-                        a: east(b),
-                        b: None,
-                    },
-                    TraversablePoint {
-                        a: west(a),
-                        b: Some(west(b)),
-                    },
-                    TraversablePoint {
-                        a: east(a),
-                        b: Some(east(b)),
-                    },
-                ]);
-            } else {
-                queue.append(&mut vec![
-                    TraversablePoint {
-                        a: north(a),
-                        b: None,
-                    },
-                    TraversablePoint {
-                        a: south(a),
-                        b: None,
-                    },
-                    TraversablePoint {
-                        a: north(b),
-                        b: None,
-                    },
-                    TraversablePoint {
-                        a: south(b),
-                        b: None,
-                    },
-                    TraversablePoint {
-                        a: north(a),
-                        b: Some(north(b)),
-                    },
-                    TraversablePoint {
-                        a: south(a),
-                        b: Some(south(b)),
-                    },
-                ]);
-            }
-        } else {
-            if !loop_bounds.contains(&current.a) {
-                //  println!("touching at {}", current);
-                connected.insert(current.a);
-
-                let mut neighbors = vec![
-                    TraversablePoint { a: n, b: None },
-                    TraversablePoint { a: w, b: None },
-                    TraversablePoint { a: s, b: None },
-                    TraversablePoint { a: e, b: None },
-                    TraversablePoint { a: n, b: Some(ne) },
-                    TraversablePoint { a: n, b: Some(nw) },
-                    TraversablePoint { a: s, b: Some(se) },
-                    TraversablePoint { a: s, b: Some(sw) },
-                    TraversablePoint { a: e, b: Some(ne) },
-                    TraversablePoint { a: e, b: Some(se) },
-                    TraversablePoint { a: w, b: Some(nw) },
-                    TraversablePoint { a: w, b: Some(sw) },
-                ];
-                //  println!(
-                //      "  adding {}",
-                //      neighbors
-                //          .iter()
-                //          .map(|x| x.to_string())
-                //          .collect::<Vec<String>>()
-                //          .join(" | ")
-                //  );
-                queue.append(&mut neighbors);
+            if in_loop(&loop_bounds, height, width, p) {
+                inside_points.insert(p);
+                inside_count += 1;
             }
         }
-
-        visited.insert(current);
     }
 
-    let mut enclosed = 0;
+    println!("CHECK ANSWER");
     for r in (0..height).rev() {
         for c in 0..width {
             let p = Point { x: c, y: r };
-            if !loop_bounds.contains(&p) && !connected.contains(&p) {
-                enclosed += 1;
-            }
-            let v = grid.get(&p).unwrap();
             if loop_bounds.contains(&p) {
-                print!("{}", v);
-            } else if connected.contains(&p) {
-                print!(".");
-            } else {
+                print!("{}", grid.get(&p).unwrap());
+            } else if inside_points.contains(&p) {
                 print!("I");
+            } else {
+                print!(".");
             }
         }
         println!("");
     }
 
-    enclosed
+    inside_count
 }
 
 #[cfg(test)]
@@ -495,6 +394,25 @@ mod tests {
                     String::from("L7JLJL-JLJLJL--JLJ.L"),
                 ],
                 10,
+            ),
+            (
+                vec![
+                    String::from("F---7"),
+                    String::from("|S--J"),
+                    String::from("|L--7"),
+                    String::from("L---J"),
+                ],
+                0,
+            ),
+            (
+                vec![
+                    String::from("F----7"),
+                    String::from("|.S--J"),
+                    String::from("|||---"),
+                    String::from("|.L--7"),
+                    String::from("L----J"),
+                ],
+                3,
             ),
         ];
 
