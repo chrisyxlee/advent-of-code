@@ -14,13 +14,14 @@ fn main() {
     let args = Args::parse();
     let lines = read_lines(args.input);
 
-    let pt1: usize = handle_pt1(&lines);
+    let pt1: usize = handle_pt1(&lines, 1);
     println!("Part 1: {}", pt1);
-    //  let pt2: i32 = handle_pt2(&lines);
-    //  println!("Part 2: {}", pt2);
+    // 717878975886 too high
+    let pt2: usize = handle_pt1(&lines, 999_999);
+    println!("Part 2: {}", pt2);
 }
 
-fn handle_pt1(lines: &Vec<String>) -> usize {
+fn handle_pt1(lines: &Vec<String>, increase: usize) -> usize {
     let mut galaxies: Vec<Point<usize>> = Vec::new();
     for (row, line) in lines.iter().enumerate() {
         for (col, shape) in line.chars().enumerate() {
@@ -70,8 +71,8 @@ fn handle_pt1(lines: &Vec<String>) -> usize {
     for (r, row) in empty_rows.iter().enumerate() {
         for i in 0..galaxies.len() {
             let mut g = galaxies[i];
-            if g.y > row + r {
-                g.y += 1;
+            if g.y > row + (r * increase) {
+                g.y += increase;
             }
             galaxies[i] = g;
         }
@@ -88,8 +89,8 @@ fn handle_pt1(lines: &Vec<String>) -> usize {
     for (c, col) in empty_cols.iter().enumerate() {
         for i in 0..galaxies.len() {
             let mut g = galaxies[i];
-            if g.x > col + c {
-                g.x += 1;
+            if g.x > col + (c * increase) {
+                g.x += increase;
             }
             galaxies[i] = g;
         }
@@ -135,11 +136,13 @@ mod tests {
                 String::from(".......#.."),
                 String::from("#...#....."),
             ],
-            374,
+            vec![(1, 374), (99, 8410)],
         )];
 
-        for (input, want) in tests {
-            assert_eq!(handle_pt1(&input), want, "for input\n{}", input.join("\n"));
+        for (input, params) in tests {
+            for (increase, want) in params {
+                assert_eq!(handle_pt1(&input, increase), want, "with increase {} for input\n{}", increase, input.join("\n"));
+            }
         }
     }
 }
