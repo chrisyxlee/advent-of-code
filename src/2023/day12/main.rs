@@ -17,12 +17,17 @@ fn main() {
     let pt1: usize = handle_pt1(&lines);
     // 7215 too low
     println!("Part 1: {}", pt1);
-    //  let pt2: usize = handle_pt1(&lines);
-    //  println!("Part 2: {}", pt2);
+    let pt2: usize = handle_pt2(&lines);
+    // 295687560777 too low
+    println!("Part 2: {}", pt2);
 }
 
 fn handle_pt1(lines: &Vec<String>) -> usize {
     lines.iter().map(|line| count_possibilities(line)).sum()
+}
+
+fn handle_pt2(lines: &Vec<String>) -> usize {
+    lines.iter().map(|line| count_5x_possibilities(line)).sum()
 }
 fn can_break(g: &char) -> bool {
     *g == '#' || *g == '?'
@@ -70,16 +75,16 @@ fn try_possibility(
         if config.len() == 0 {
             possibilities = 1;
         }
-        println!(
-            "({}, {}) --> = {} possibilites",
-            gears.iter().collect::<String>(),
-            config
-                .iter()
-                .map(|x| x.to_string())
-                .collect::<Vec<String>>()
-                .join(","),
-            possibilities
-        );
+        //   println!(
+        //       "({}, {}) --> = {} possibilites",
+        //       gears.iter().collect::<String>(),
+        //       config
+        //           .iter()
+        //           .map(|x| x.to_string())
+        //           .collect::<Vec<String>>()
+        //           .join(","),
+        //       possibilities
+        //   );
 
         return possibilities;
     }
@@ -89,33 +94,33 @@ fn try_possibility(
         if gears.iter().all(|x| can_operate(x)) {
             possibilities = 1;
         }
-        println!(
-            "({}, {}) --> = {} possibilites",
-            gears.iter().collect::<String>(),
-            config
-                .iter()
-                .map(|x| x.to_string())
-                .collect::<Vec<String>>()
-                .join(","),
-            possibilities
-        );
+        //   println!(
+        //       "({}, {}) --> = {} possibilites",
+        //       gears.iter().collect::<String>(),
+        //       config
+        //           .iter()
+        //           .map(|x| x.to_string())
+        //           .collect::<Vec<String>>()
+        //           .join(","),
+        //       possibilities
+        //   );
 
         return possibilities;
     }
 
     let min_gears: usize = config.iter().sum::<usize>() + (config.len() - 1);
     if min_gears > gears.len() {
-        println!(
-            "({}, {}) --> {} min > {} gears = 0 possibilities",
-            gears.iter().collect::<String>(),
-            config
-                .iter()
-                .map(|x| x.to_string())
-                .collect::<Vec<String>>()
-                .join(","),
-            min_gears,
-            gears.len(),
-        );
+        //   println!(
+        //       "({}, {}) --> {} min > {} gears = 0 possibilities",
+        //       gears.iter().collect::<String>(),
+        //       config
+        //           .iter()
+        //           .map(|x| x.to_string())
+        //           .collect::<Vec<String>>()
+        //           .join(","),
+        //       min_gears,
+        //       gears.len(),
+        //   );
         return 0;
     }
 
@@ -130,45 +135,45 @@ fn try_possibility(
                     &config[1..config.len()].to_vec(),
                     memo,
                 );
-                println!(
-                    "({}, {}) --> {} and {} = {} possibilites",
-                    gears.iter().collect::<String>(),
-                    config
-                        .iter()
-                        .map(|x| x.to_string())
-                        .collect::<Vec<String>>()
-                        .join(","),
-                    c,
-                    g,
-                    possibilities
-                );
+                //  println!(
+                //      "({}, {}) --> {} and {} = {} possibilites",
+                //      gears.iter().collect::<String>(),
+                //      config
+                //          .iter()
+                //          .map(|x| x.to_string())
+                //          .collect::<Vec<String>>()
+                //          .join(","),
+                //      c,
+                //      g,
+                //      possibilities
+                //  );
                 return possibilities;
             } else if gears.len() == 1 {
-                println!(
-                    "({}, {}) --> {} and {} = 1 possibilites",
-                    gears.iter().collect::<String>(),
-                    config
-                        .iter()
-                        .map(|x| x.to_string())
-                        .collect::<Vec<String>>()
-                        .join(","),
-                    c,
-                    g,
-                );
+                //  println!(
+                //      "({}, {}) --> {} and {} = 1 possibilites",
+                //      gears.iter().collect::<String>(),
+                //      config
+                //          .iter()
+                //          .map(|x| x.to_string())
+                //          .collect::<Vec<String>>()
+                //          .join(","),
+                //      c,
+                //      g,
+                //  );
                 return 1;
             } else {
-                println!(
-                    "({}, {}) --> {} and {} = {} possibilites",
-                    gears.iter().collect::<String>(),
-                    config
-                        .iter()
-                        .map(|x| x.to_string())
-                        .collect::<Vec<String>>()
-                        .join(","),
-                    c,
-                    g,
-                    0
-                );
+                //  println!(
+                //      "({}, {}) --> {} and {} = {} possibilites",
+                //      gears.iter().collect::<String>(),
+                //      config
+                //          .iter()
+                //          .map(|x| x.to_string())
+                //          .collect::<Vec<String>>()
+                //          .join(","),
+                //      c,
+                //      g,
+                //      0
+                //  );
                 return 0;
             }
         }
@@ -184,50 +189,50 @@ fn try_possibility(
                     memo,
                 );
             }
-            println!(
-                "({}, {}) --> {} and {} = {} possibilites",
-                gears.iter().collect::<String>(),
-                config
-                    .iter()
-                    .map(|x| x.to_string())
-                    .collect::<Vec<String>>()
-                    .join(","),
-                c,
-                g,
-                possibilities
-            );
+            // println!(
+            //     "({}, {}) --> {} and {} = {} possibilites",
+            //     gears.iter().collect::<String>(),
+            //     config
+            //         .iter()
+            //         .map(|x| x.to_string())
+            //         .collect::<Vec<String>>()
+            //         .join(","),
+            //     c,
+            //     g,
+            //     possibilities
+            // );
             return possibilities;
         }
         (_, '.') => {
             let possibilities = try_memo_possibility(&gears[1..gears.len()].to_vec(), config, memo);
-            println!(
-                "({}, {}) --> {} and {} = {} possibilites",
-                gears.iter().collect::<String>(),
-                config
-                    .iter()
-                    .map(|x| x.to_string())
-                    .collect::<Vec<String>>()
-                    .join(","),
-                c,
-                g,
-                possibilities
-            );
+            // println!(
+            //     "({}, {}) --> {} and {} = {} possibilites",
+            //     gears.iter().collect::<String>(),
+            //     config
+            //         .iter()
+            //         .map(|x| x.to_string())
+            //         .collect::<Vec<String>>()
+            //         .join(","),
+            //     c,
+            //     g,
+            //     possibilities
+            // );
             return possibilities;
         }
         (1, '?') => {
             let operational = try_memo_possibility(&gears[1..gears.len()].to_vec(), config, memo);
-            println!(
-                "({}, {}) --> {} and {} (.) = {} possibilites",
-                gears.iter().collect::<String>(),
-                config
-                    .iter()
-                    .map(|x| x.to_string())
-                    .collect::<Vec<String>>()
-                    .join(","),
-                c,
-                g,
-                operational
-            );
+            // println!(
+            //     "({}, {}) --> {} and {} (.) = {} possibilites",
+            //     gears.iter().collect::<String>(),
+            //     config
+            //         .iter()
+            //         .map(|x| x.to_string())
+            //         .collect::<Vec<String>>()
+            //         .join(","),
+            //     c,
+            //     g,
+            //     operational
+            // );
             let mut broken = 0;
             if gears.len() == 1 || (gears.len() > 1 && can_operate(&gears[1])) {
                 broken = try_memo_possibility(
@@ -236,49 +241,49 @@ fn try_possibility(
                     &config[1..config.len()].to_vec(),
                     memo,
                 );
-                println!(
-                    "({}, {}) --> {} and {} (#) = {} possibilites",
-                    gears.iter().collect::<String>(),
-                    config
-                        .iter()
-                        .map(|x| x.to_string())
-                        .collect::<Vec<String>>()
-                        .join(","),
-                    c,
-                    g,
-                    broken,
-                );
+                //  println!(
+                //      "({}, {}) --> {} and {} (#) = {} possibilites",
+                //      gears.iter().collect::<String>(),
+                //      config
+                //          .iter()
+                //          .map(|x| x.to_string())
+                //          .collect::<Vec<String>>()
+                //          .join(","),
+                //      c,
+                //      g,
+                //      broken,
+                //  );
             }
-            println!(
-                "({}, {}) --> {} and {} = {} operational + {} broken = {} possibilites",
-                gears.iter().collect::<String>(),
-                config
-                    .iter()
-                    .map(|x| x.to_string())
-                    .collect::<Vec<String>>()
-                    .join(","),
-                c,
-                g,
-                operational,
-                broken,
-                operational + broken
-            );
+            // println!(
+            //     "({}, {}) --> {} and {} = {} operational + {} broken = {} possibilites",
+            //     gears.iter().collect::<String>(),
+            //     config
+            //         .iter()
+            //         .map(|x| x.to_string())
+            //         .collect::<Vec<String>>()
+            //         .join(","),
+            //     c,
+            //     g,
+            //     operational,
+            //     broken,
+            //     operational + broken
+            // );
             return operational + broken;
         }
         (_, '?') => {
             let operational = try_memo_possibility(&gears[1..gears.len()].to_vec(), config, memo);
-            println!(
-                "({}, {}) --> {} and {} (.) = {} possibilites",
-                gears.iter().collect::<String>(),
-                config
-                    .iter()
-                    .map(|x| x.to_string())
-                    .collect::<Vec<String>>()
-                    .join(","),
-                c,
-                g,
-                operational
-            );
+            // println!(
+            //     "({}, {}) --> {} and {} (.) = {} possibilites",
+            //     gears.iter().collect::<String>(),
+            //     config
+            //         .iter()
+            //         .map(|x| x.to_string())
+            //         .collect::<Vec<String>>()
+            //         .join(","),
+            //     c,
+            //     g,
+            //     operational
+            // );
             let mut broken = 0;
             if *c <= gears.len()
                 && gears[0..*c].iter().all(|x| can_break(x))
@@ -289,33 +294,33 @@ fn try_possibility(
                     &config[1..config.len()].to_vec(),
                     memo,
                 );
-                println!(
-                    "({}, {}) --> {} and {} (#) = {} possibilites",
-                    gears.iter().collect::<String>(),
-                    config
-                        .iter()
-                        .map(|x| x.to_string())
-                        .collect::<Vec<String>>()
-                        .join(","),
-                    c,
-                    g,
-                    broken,
-                );
+                //  println!(
+                //      "({}, {}) --> {} and {} (#) = {} possibilites",
+                //      gears.iter().collect::<String>(),
+                //      config
+                //          .iter()
+                //          .map(|x| x.to_string())
+                //          .collect::<Vec<String>>()
+                //          .join(","),
+                //      c,
+                //      g,
+                //      broken,
+                //  );
             }
-            println!(
-                "({}, {}) --> {} and {} = {} operational + {} broken = {} possibilites",
-                gears.iter().collect::<String>(),
-                config
-                    .iter()
-                    .map(|x| x.to_string())
-                    .collect::<Vec<String>>()
-                    .join(","),
-                c,
-                g,
-                operational,
-                broken,
-                operational + broken
-            );
+            // println!(
+            //     "({}, {}) --> {} and {} = {} operational + {} broken = {} possibilites",
+            //     gears.iter().collect::<String>(),
+            //     config
+            //         .iter()
+            //         .map(|x| x.to_string())
+            //         .collect::<Vec<String>>()
+            //         .join(","),
+            //     c,
+            //     g,
+            //     operational,
+            //     broken,
+            //     operational + broken
+            // );
             return operational + broken;
         }
         _ => todo!(),
@@ -330,15 +335,42 @@ fn count_possibilities(line: &str) -> usize {
         .map(|x| x.parse::<usize>().unwrap())
         .collect::<Vec<usize>>();
 
-    println!(
-        "START gears = {}, config = {}",
-        gears.iter().collect::<String>(),
-        config
-            .iter()
-            .map(|x| x.to_string())
-            .collect::<Vec<String>>()
-            .join(",")
-    );
+    //  println!(
+    //      "START gears = {}, config = {}",
+    //      gears.iter().collect::<String>(),
+    //      config
+    //          .iter()
+    //          .map(|x| x.to_string())
+    //          .collect::<Vec<String>>()
+    //          .join(",")
+    //  );
+
+    try_memo_possibility(&gears, &config, &mut HashMap::new())
+}
+
+fn count_5x_possibilities(line: &str) -> usize {
+    let parts = line.split(" ").collect::<Vec<&str>>();
+    let gears = vec![parts[0]; 5].join("?").chars().collect::<Vec<char>>();
+    let config = vec![
+        parts[1]
+            .split(",")
+            .map(|x| x.parse::<usize>().unwrap())
+            .collect::<Vec<usize>>();
+        5
+    ]
+    .into_iter()
+    .flatten()
+    .collect::<Vec<usize>>();
+
+    //  println!(
+    //      "START gears = {}, config = {}",
+    //      gears.iter().collect::<String>(),
+    //      config
+    //          .iter()
+    //          .map(|x| x.to_string())
+    //          .collect::<Vec<String>>()
+    //          .join(",")
+    //  );
 
     try_memo_possibility(&gears, &config, &mut HashMap::new())
 }
@@ -373,6 +405,27 @@ mod tests {
 
         for (input, want) in tests {
             assert_eq!(count_possibilities(&input), want, "with input\n{}", input);
+        }
+    }
+
+    #[test]
+    fn test_get_valid_pt2() {
+        let tests = [
+            (String::from("???.### 1,1,3"), 1),
+            (String::from(".??..??...?##. 1,1,3"), 16384),
+            (String::from("?#?#?#?#?#?#?#? 1,3,1,6"), 1),
+            (String::from("????.#...#... 4,1,1"), 16),
+            (String::from("????.######..#####. 1,6,5"), 2500),
+            (String::from("?###???????? 3,2,1"), 506250),
+        ];
+
+        for (input, want) in tests {
+            assert_eq!(
+                count_5x_possibilities(&input),
+                want,
+                "with input\n{}",
+                input
+            );
         }
     }
 }
