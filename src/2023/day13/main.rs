@@ -13,26 +13,49 @@ fn main() {
     let args = Args::parse();
     let lines = read_lines(args.input);
 
-    let pt1: usize = handle_pt1(&lines);
+    let (pt1, pt2): (usize, usize) = handle(&lines);
     // 34893 is low
     // 34993
     println!("Part 1: {}", pt1);
-    //  let pt2: usize = handle_pt1(&lines);
-    //  println!("Part 2: {}", pt2);
+    println!("Part 2: {}", pt2);
 }
 
-fn handle_pt1(lines: &Vec<String>) -> usize {
-    println!(
-        "{}",
-        split_input(lines)
-            .iter()
-            .map(|l| reflection(l))
-            .enumerate()
-            .map(|(i, x)| format!("{} = {}", i, x).to_string())
-            .collect::<Vec<String>>()
-            .join("\n")
-    );
-    split_input(lines).iter().map(|l| reflection(l)).sum()
+fn handle(lines: &Vec<String>) -> (usize, usize) {
+    let (part1, part2): (Vec<usize>, Vec<usize>) =
+        split_input(lines).iter().map(|l| reflection(l)).unzip();
+    (part1.iter().sum(), part2.iter().sum())
+}
+
+fn diff(a: &str, b: &str) -> usize {
+    assert_eq!(a.len(), b.len());
+
+    let mut diffs = 0;
+    for i in 0..a.len() {
+        if a.chars().nth(i).unwrap() != b.chars().nth(i).unwrap() {
+            diffs += 1;
+        }
+    }
+
+    diffs
+}
+
+fn find_smudged_reflection(lines: &Vec<String>) -> usize {
+    for i in 1..lines.len() {
+        let mut matches = true;
+        let mut diffs = 0;
+        for r in 0..*(vec![i, lines.len() - i].iter().min().unwrap()) {
+            diffs += diff(&lines[i + r], &lines[i - r - 1]);
+            if diffs > 1 {
+                matches = false;
+                break;
+            }
+        }
+        if diffs == 1 && matches {
+            return i;
+        }
+    }
+
+    0
 }
 
 fn find_reflection(lines: &Vec<String>) -> usize {
@@ -41,6 +64,7 @@ fn find_reflection(lines: &Vec<String>) -> usize {
         for r in 0..*(vec![i, lines.len() - i].iter().min().unwrap()) {
             if lines[i + r] != lines[i - r - 1] {
                 matches = false;
+                break;
             }
         }
         if matches {
@@ -51,54 +75,41 @@ fn find_reflection(lines: &Vec<String>) -> usize {
     return 0;
 }
 
-fn reflection(lines: &Vec<String>) -> usize {
-    let horizontal = find_horizontal_reflection(lines);
-    let vertical = find_vertical_reflection(lines);
-    assert!(horizontal > 0 || vertical > 0);
-    assert!(horizontal == 0 || vertical == 0);
-    let mut vertical_indicator: String = String::from("");
-    if vertical > 0 {
-        vertical_indicator = format!("{}><", vec![" "; vertical - 1].join("")).to_string();
+fn reflection(lines: &Vec<String>) -> (usize, usize) {
+    let transposed = transpose(lines);
+
+    let horizontal_pt1 = find_reflection(lines) * 100;
+    let vertical_pt1 = find_reflection(&transposed);
+    assert!(horizontal_pt1 > 0 || vertical_pt1 > 0);
+    assert!(horizontal_pt1 == 0 || vertical_pt1 == 0);
+
+    let horizontal_pt2 = find_smudged_reflection(lines) * 100;
+    let vertical_pt2 = find_smudged_reflection(&transposed);
+    assert!(
+        horizontal_pt2 > 0 || vertical_pt2 > 0,
+        "{}",
+        lines.join("\n")
+    );
+    assert!(
+        horizontal_pt2 == 0 || vertical_pt2 == 0,
+        "h={}, v={}",
+        horizontal_pt2,
+        vertical_pt2
+    );
+
+    let pt1 = horizontal_pt1 + vertical_pt1;
+    let mut pt2 = vertical_pt2;
+    if horizontal_pt2 > 0 && horizontal_pt2 != pt1 {
+        pt2 = horizontal_pt2;
     }
-    //     println!(
-    //         "GRID
-    //  {}
-    // {}
-    //  {}
-    // horizontal = {}
-    // vertical = {}
-    // ",
-    //         vertical_indicator,
-    //         lines
-    //             .iter()
-    //             .enumerate()
-    //             .map(|(i, l)| {
-    //                 if horizontal > 0 {
-    //                     if i == horizontal / 100 {
-    //                         return format!("^{}^", l).to_string();
-    //                     } else if i == horizontal / 100 - 1 {
-    //                         return format!("v{}v", l).to_string();
-    //                     }
-    //                 }
-    //                 return format!(" {}", l).to_string();
-    //             })
-    //             .collect::<Vec<String>>()
-    //             .join("\n"),
-    //         vertical_indicator,
-    //         horizontal,
-    //         vertical
-    //     );
-    return horizontal + vertical;
+    assert_ne!(pt1, pt2);
+
+    (pt1, pt2)
 }
 
-fn find_horizontal_reflection(lines: &Vec<String>) -> usize {
-    find_reflection(lines) * 100
-}
-
-fn find_vertical_reflection(lines: &Vec<String>) -> usize {
+fn transpose(lines: &Vec<String>) -> Vec<String> {
     let height = lines.len();
     let width = lines.iter().map(|line| line.len()).max().unwrap();
-    //  println!("width = {}, height = {}", width, height);
 
     let mut transpose: Vec<String> = Vec::new();
     let mut curr: Vec<char> = Vec::new();
@@ -110,7 +121,7 @@ fn find_vertical_reflection(lines: &Vec<String>) -> usize {
         curr = Vec::new();
     }
 
-    find_reflection(&transpose)
+    transpose
 }
 
 fn split_input(lines: &Vec<String>) -> Vec<Vec<String>> {
@@ -150,7 +161,7 @@ mod tests {
                     String::from("..##..##."),
                     String::from("#.#.##.#."),
                 ],
-                5,
+                (5, 300),
             ),
             (
                 vec![
@@ -162,7 +173,7 @@ mod tests {
                     String::from("..##..###"),
                     String::from("#....#..#"),
                 ],
-                400,
+                (400, 100),
             ),
             (
                 vec![
@@ -174,7 +185,7 @@ mod tests {
                     String::from(".####....##"),
                     String::from("..##..##..#"),
                 ],
-                3,
+                (3, 7),
             ),
         ];
 
