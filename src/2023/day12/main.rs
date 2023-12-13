@@ -1,5 +1,6 @@
 use advent_of_code::utils::input::read_lines;
 use clap::Parser;
+use std::collections::HashMap;
 
 #[derive(Parser, Debug)]
 #[command(author, version, about, long_about = None)]
@@ -30,7 +31,40 @@ fn can_operate(g: &char) -> bool {
     *g == '.' || *g == '?'
 }
 
-fn try_possibility(gears: &Vec<char>, config: &Vec<usize>) -> usize {
+fn memo_key(gears: &Vec<char>, config: &Vec<usize>) -> String {
+    format!(
+        "{} {}",
+        gears.iter().collect::<String>(),
+        config
+            .iter()
+            .map(|x| x.to_string())
+            .collect::<Vec<String>>()
+            .join(",")
+    )
+    .to_string()
+}
+
+fn try_memo_possibility(
+    gears: &Vec<char>,
+    config: &Vec<usize>,
+    memo: &mut HashMap<String, usize>,
+) -> usize {
+    let key = memo_key(gears, config);
+    if let Some(m) = memo.get(&key) {
+        return *m;
+    }
+
+    let m = try_possibility(gears, config, memo);
+    memo.insert(key, m);
+
+    m
+}
+
+fn try_possibility(
+    gears: &Vec<char>,
+    config: &Vec<usize>,
+    memo: &mut HashMap<String, usize>,
+) -> usize {
     if gears.len() == 0 {
         let mut possibilities = 0;
         if config.len() == 0 {
@@ -69,15 +103,32 @@ fn try_possibility(gears: &Vec<char>, config: &Vec<usize>) -> usize {
         return possibilities;
     }
 
+    let min_gears: usize = config.iter().sum::<usize>() + (config.len() - 1);
+    if min_gears > gears.len() {
+        println!(
+            "({}, {}) --> {} min > {} gears = 0 possibilities",
+            gears.iter().collect::<String>(),
+            config
+                .iter()
+                .map(|x| x.to_string())
+                .collect::<Vec<String>>()
+                .join(","),
+            min_gears,
+            gears.len(),
+        );
+        return 0;
+    }
+
     let c = config.first().unwrap();
     let g = gears.first().unwrap();
 
     match (*c, *g) {
         (1, '#') => {
             if gears.len() > 1 && can_operate(&gears[1]) {
-                let possibilities = try_possibility(
+                let possibilities = try_memo_possibility(
                     &gears[2..gears.len()].to_vec(),
                     &config[1..config.len()].to_vec(),
+                    memo,
                 );
                 println!(
                     "({}, {}) --> {} and {} = {} possibilites",
@@ -127,9 +178,10 @@ fn try_possibility(gears: &Vec<char>, config: &Vec<usize>) -> usize {
                 && gears[0..*c].iter().all(|x| can_break(x))
                 && (*c == gears.len() || can_operate(&gears[*c]))
             {
-                possibilities += try_possibility(
+                possibilities += try_memo_possibility(
                     &gears[*vec![*c + 1, gears.len()].iter().min().unwrap()..gears.len()].to_vec(),
                     &config[1..config.len()].to_vec(),
+                    memo,
                 );
             }
             println!(
@@ -147,7 +199,7 @@ fn try_possibility(gears: &Vec<char>, config: &Vec<usize>) -> usize {
             return possibilities;
         }
         (_, '.') => {
-            let possibilities = try_possibility(&gears[1..gears.len()].to_vec(), config);
+            let possibilities = try_memo_possibility(&gears[1..gears.len()].to_vec(), config, memo);
             println!(
                 "({}, {}) --> {} and {} = {} possibilites",
                 gears.iter().collect::<String>(),
@@ -163,9 +215,9 @@ fn try_possibility(gears: &Vec<char>, config: &Vec<usize>) -> usize {
             return possibilities;
         }
         (1, '?') => {
-            let operational = try_possibility(&gears[1..gears.len()].to_vec(), config);
+            let operational = try_memo_possibility(&gears[1..gears.len()].to_vec(), config, memo);
             println!(
-                "({}, {}) --> {} and {} (try operational) = {} possibilites",
+                "({}, {}) --> {} and {} (.) = {} possibilites",
                 gears.iter().collect::<String>(),
                 config
                     .iter()
@@ -178,13 +230,14 @@ fn try_possibility(gears: &Vec<char>, config: &Vec<usize>) -> usize {
             );
             let mut broken = 0;
             if gears.len() == 1 || (gears.len() > 1 && can_operate(&gears[1])) {
-                broken = try_possibility(
+                broken = try_memo_possibility(
                     &gears[*vec![2 as usize, gears.len()].iter().min().unwrap()..gears.len()]
                         .to_vec(),
                     &config[1..config.len()].to_vec(),
+                    memo,
                 );
                 println!(
-                    "({}, {}) --> {} and {} (try broken) = {} possibilites",
+                    "({}, {}) --> {} and {} (#) = {} possibilites",
                     gears.iter().collect::<String>(),
                     config
                         .iter()
@@ -213,10 +266,9 @@ fn try_possibility(gears: &Vec<char>, config: &Vec<usize>) -> usize {
             return operational + broken;
         }
         (_, '?') => {
-            // 4, ????.
-            let operational = try_possibility(&gears[1..gears.len()].to_vec(), config);
+            let operational = try_memo_possibility(&gears[1..gears.len()].to_vec(), config, memo);
             println!(
-                "({}, {}) --> {} and {} (try operational) = {} possibilites",
+                "({}, {}) --> {} and {} (.) = {} possibilites",
                 gears.iter().collect::<String>(),
                 config
                     .iter()
@@ -228,16 +280,17 @@ fn try_possibility(gears: &Vec<char>, config: &Vec<usize>) -> usize {
                 operational
             );
             let mut broken = 0;
-            if *c < gears.len()
+            if *c <= gears.len()
                 && gears[0..*c].iter().all(|x| can_break(x))
                 && (*c == gears.len() || can_operate(&gears[*c]))
             {
-                broken = try_possibility(
-                    &gears[*c + 1..gears.len()].to_vec(),
+                broken = try_memo_possibility(
+                    &gears[*vec![*c + 1, gears.len()].iter().min().unwrap()..gears.len()].to_vec(),
                     &config[1..config.len()].to_vec(),
+                    memo,
                 );
                 println!(
-                    "({}, {}) --> {} and {} (try broken) = {} possibilites",
+                    "({}, {}) --> {} and {} (#) = {} possibilites",
                     gears.iter().collect::<String>(),
                     config
                         .iter()
@@ -287,7 +340,7 @@ fn count_possibilities(line: &str) -> usize {
             .join(",")
     );
 
-    try_possibility(&gears, &config)
+    try_memo_possibility(&gears, &config, &mut HashMap::new())
 }
 
 #[cfg(test)]
@@ -297,21 +350,25 @@ mod tests {
     #[test]
     fn test_get_valid() {
         let tests = [
-            // (String::from("???.### 1,1,3"), 1),
-            // (String::from(".??..??...?##. 1,1,3"), 4),
-            // (String::from("?#?#?#?#?#?#?#? 1,3,1,6"), 1),
-            // (String::from("????.#...#... 4,1,1"), 1),
-            // (String::from("????.######..#####. 1,6,5"), 4),
-            // (String::from("?###???????? 3,2,1"), 10),
-            // (String::from(".???..??##.. 2,4"), 2),
-            // (String::from("??##.?#?.?#?# 4,3,3"), 1),
-            // (String::from("?????.??##?????????. 2,6,2"), 48),
-            (String::from("????????..?????#?#?? 3,5"), 18),
-            // (String::from("?.???????###.????? 1,2,2,4,3"), 4),
-            // (String::from("#?#???.??#?? 4,4"), 4),
-            // (String::from(".????#?????.?????.? 8,3"), 4),
-            // (String::from("??#??#?????.?????? 7,5"), 4),
-            // (String::from("#??#??#???#..??? 1,5,2,1"), 4),
+            (String::from("???.### 1,1,3"), 1),
+            (String::from(".??..??...?##. 1,1,3"), 4),
+            (String::from("?#?#?#?#?#?#?#? 1,3,1,6"), 1),
+            (String::from("????.#...#... 4,1,1"), 1),
+            (String::from("????.######..#####. 1,6,5"), 4),
+            (String::from("?###???????? 3,2,1"), 10),
+            (String::from(".???..??##.. 2,4"), 2),
+            (String::from("??##.?#?.?#?# 4,3,3"), 1),
+            (String::from("?????.??##?????????. 2,6,2"), 48),
+            (String::from("????????..?????#?#?? 3,5"), 21),
+            (String::from("???????? 3"), 6),
+            (String::from("??? 3"), 1),
+            (String::from("?????#?#?? 5"), 3),
+            (String::from("?????#?#?? 3,5"), 3),
+            (String::from("?.???????###.????? 1,2,2,4,3"), 3),
+            (String::from("#?#???.??#?? 4,4"), 2),
+            (String::from(".????#?????.?????.? 8,3"), 4),
+            (String::from("??#??#?????.?????? 7,5"), 6),
+            (String::from("#??#??#???#..??? 1,5,2,1"), 6),
         ];
 
         for (input, want) in tests {
