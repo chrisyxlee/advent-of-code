@@ -66,17 +66,48 @@ fn create_grid(lines: &Vec<String>) -> (HashMap<Point<i32>, char>, (i32, i32)) {
     (grid, (width, height))
 }
 
+fn grab_from_memo(
+    check: (Point<i32>, char),
+    memo: &HashMap<(Point<i32>, char), Vec<(Point<i32>, char)>>,
+    visited: &mut HashSet<(Point<i32>, char)>,
+    lights: &mut HashSet<Point<i32>>,
+) -> bool {
+    let mut found = false;
+
+    let mut stack = Vec::new();
+    stack.push(check);
+
+    while !stack.is_empty() {
+        let curr = stack.pop().unwrap();
+        if visited.contains(&curr) {
+            continue;
+        }
+
+        let (loc, _) = curr;
+        visited.insert(curr);
+        lights.insert(loc);
+
+        if let Some(nexts) = memo.get(&curr) {
+            stack.append(&mut nexts.clone());
+            found = true;
+        }
+    }
+
+    found
+}
+
 fn shoot_beams(
     grid: &HashMap<Point<i32>, char>,
     width: i32,
     height: i32,
     start: Point<i32>,
     start_dir: char,
+    memo: &mut HashMap<(Point<i32>, char), Vec<(Point<i32>, char)>>,
 ) -> i32 {
     let mut visited: HashSet<(Point<i32>, char)> = HashSet::new();
 
-    let mut light: HashSet<Point<i32>> = HashSet::new();
-    light.insert(start);
+    let mut lights: HashSet<Point<i32>> = HashSet::new();
+    lights.insert(start);
 
     let mut beams: Vec<(Point<i32>, char)> = Vec::new();
     beams.push((start, start_dir));
@@ -88,36 +119,42 @@ fn shoot_beams(
                 continue;
             }
 
-            next_beams.append(
-                &mut match (grid.get(&loc).unwrap(), dir) {
-                    ('-', NORTH) => {
-                        vec![go(loc, WEST, width, height), go(loc, EAST, width, height)]
-                    }
-                    ('-', SOUTH) => {
-                        vec![go(loc, WEST, width, height), go(loc, EAST, width, height)]
-                    }
-                    ('|', EAST) => {
-                        vec![go(loc, NORTH, width, height), go(loc, SOUTH, width, height)]
-                    }
-                    ('|', WEST) => {
-                        vec![go(loc, NORTH, width, height), go(loc, SOUTH, width, height)]
-                    }
-                    ('/', NORTH) => vec![go(loc, EAST, width, height)],
-                    ('/', EAST) => vec![go(loc, NORTH, width, height)],
-                    ('/', WEST) => vec![go(loc, SOUTH, width, height)],
-                    ('/', SOUTH) => vec![go(loc, WEST, width, height)],
-                    ('\\', NORTH) => vec![go(loc, WEST, width, height)],
-                    ('\\', EAST) => vec![go(loc, SOUTH, width, height)],
-                    ('\\', WEST) => vec![go(loc, NORTH, width, height)],
-                    ('\\', SOUTH) => vec![go(loc, EAST, width, height)],
-                    _ => vec![go(loc, dir, width, height)],
+            if grab_from_memo((loc, dir), memo, &mut visited, &mut lights) {
+                continue;
+            }
+
+            let mut next = match (grid.get(&loc).unwrap(), dir) {
+                ('-', NORTH) => {
+                    vec![go(loc, WEST, width, height), go(loc, EAST, width, height)]
                 }
-                .iter()
-                .filter(|x| x.is_some())
-                .map(|x| x.unwrap())
-                .collect::<Vec<(Point<i32>, char)>>(),
-            );
-            light.insert(loc);
+                ('-', SOUTH) => {
+                    vec![go(loc, WEST, width, height), go(loc, EAST, width, height)]
+                }
+                ('|', EAST) => {
+                    vec![go(loc, NORTH, width, height), go(loc, SOUTH, width, height)]
+                }
+                ('|', WEST) => {
+                    vec![go(loc, NORTH, width, height), go(loc, SOUTH, width, height)]
+                }
+                ('/', NORTH) => vec![go(loc, EAST, width, height)],
+                ('/', EAST) => vec![go(loc, NORTH, width, height)],
+                ('/', WEST) => vec![go(loc, SOUTH, width, height)],
+                ('/', SOUTH) => vec![go(loc, WEST, width, height)],
+                ('\\', NORTH) => vec![go(loc, WEST, width, height)],
+                ('\\', EAST) => vec![go(loc, SOUTH, width, height)],
+                ('\\', WEST) => vec![go(loc, NORTH, width, height)],
+                ('\\', SOUTH) => vec![go(loc, EAST, width, height)],
+                _ => vec![go(loc, dir, width, height)],
+            }
+            .iter()
+            .filter(|x| x.is_some())
+            .map(|x| x.unwrap())
+            .collect::<Vec<(Point<i32>, char)>>();
+
+            memo.insert((loc, dir), next.clone());
+
+            next_beams.append(&mut next);
+            lights.insert(loc);
             visited.insert((loc, dir));
         }
 
@@ -129,7 +166,7 @@ fn shoot_beams(
         .map(|w| {
             (0..height)
                 .into_iter()
-                .map(|h| light.contains(&Point { x: w, y: h }))
+                .map(|h| lights.contains(&Point { x: w, y: h }))
                 .filter(|x| *x)
                 .count()
         })
@@ -148,6 +185,7 @@ fn handle_pt1(grid: &HashMap<Point<i32>, char>, width: i32, height: i32) -> i32 
             y: height - 1,
         },
         EAST,
+        &mut HashMap::new(),
     )
 }
 
@@ -188,9 +226,12 @@ fn handle_pt2(grid: &HashMap<Point<i32>, char>, width: i32, height: i32) -> i32 
         ]);
     }
 
+    let mut memo = HashMap::new();
     starts
         .iter()
-        .map(|(start_loc, start_dir)| shoot_beams(grid, width, height, *start_loc, *start_dir))
+        .map(|(start_loc, start_dir)| {
+            shoot_beams(grid, width, height, *start_loc, *start_dir, &mut memo)
+        })
         .max()
         .unwrap()
 }
