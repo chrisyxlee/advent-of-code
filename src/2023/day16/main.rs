@@ -152,27 +152,27 @@ fn handle_pt1(grid: &HashMap<Point<i32>, char>, width: i32, height: i32) -> i32 
 }
 
 fn handle_pt2(grid: &HashMap<Point<i32>, char>, width: i32, height: i32) -> i32 {
-    let mut max_lights = 0;
-
     let mut starts: Vec<(Point<i32>, char)> = Vec::new();
     for h in 0..height {
-        match h {
-            0 => starts.append(&mut vec![
+        if h == 0 {
+            starts.append(&mut vec![
                 (Point { x: 0, y: h }, EAST),
                 (Point { x: 0, y: h }, SOUTH),
                 (Point { x: width - 1, y: h }, WEST),
                 (Point { x: width - 1, y: h }, SOUTH),
-            ]),
-            height => starts.append(&mut vec![
+            ]);
+        } else if h == height - 1 {
+            starts.append(&mut vec![
                 (Point { x: 0, y: h }, EAST),
                 (Point { x: 0, y: h }, SOUTH),
                 (Point { x: width - 1, y: h }, WEST),
                 (Point { x: width - 1, y: h }, NORTH),
-            ]),
-            _ => starts.append(&mut vec![
+            ]);
+        } else {
+            starts.append(&mut vec![
                 (Point { x: 0, y: h }, EAST),
                 (Point { x: width - 1, y: h }, WEST),
-            ]),
+            ]);
         }
     }
     for w in 1..width - 1 {
@@ -195,44 +195,12 @@ fn handle_pt2(grid: &HashMap<Point<i32>, char>, width: i32, height: i32) -> i32 
         .unwrap()
 }
 
-fn show_grid(grid: &HashMap<Point<i32>, char>, width: i32, height: i32) {
-    let mut res: Vec<char> = Vec::new();
-    for h in (0..height).rev() {
-        for w in 0..width {
-            let p = Point { x: w, y: h };
-            res.push(*grid.get(&p).unwrap());
-        }
-
-        res.push('\n');
-    }
-
-    println!("{}", res.iter().collect::<String>());
-}
-
-fn show_lights(grid: &HashSet<Point<i32>>, width: i32, height: i32) {
-    let mut res: Vec<char> = Vec::new();
-    for h in (0..height).rev() {
-        for w in 0..width {
-            let p = Point { x: w, y: h };
-            if grid.contains(&p) {
-                res.push('#');
-            } else {
-                res.push('.');
-            }
-        }
-
-        res.push('\n');
-    }
-
-    println!("{}", res.iter().collect::<String>());
-}
-
 #[cfg(test)]
 mod tests {
     use super::*;
 
     #[test]
-    fn test_get_valid() {
+    fn test_handle() {
         let tests = [(
             vec![
                 String::from(r".|...\...."),
@@ -246,11 +214,23 @@ mod tests {
                 String::from(r".|....-|.\"),
                 String::from(r"..//.|...."),
             ],
-            46,
+            (46, 51),
         )];
 
-        for (input, want) in tests {
-            assert_eq!(handle_pt1(&input), want, "with input\n{}", input.join("\n"));
+        for (input, (want1, want2)) in tests {
+            let (grid, (width, height)) = create_grid(&input);
+            assert_eq!(
+                handle_pt1(&grid, width, height),
+                want1,
+                "with input\n{}",
+                input.join("\n")
+            );
+            assert_eq!(
+                handle_pt2(&grid, width, height),
+                want2,
+                "with input\n{}",
+                input.join("\n")
+            );
         }
     }
 }
