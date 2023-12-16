@@ -14,10 +14,10 @@ struct Args {
 fn main() {
     let args = Args::parse();
     let lines = read_lines(args.input);
+    let (grid, (width, height)) = create_grid(&lines);
 
-    // 8244 too low
-    println!("Part 1: {}", handle_pt1(&lines));
-    //  println!("Part 2: {}", handle_pt2(&lines));
+    println!("Part 1: {}", handle_pt1(&grid, width, height));
+    println!("Part 2: {}", handle_pt2(&grid, width, height));
 }
 
 const WEST: char = 'W';
@@ -48,7 +48,7 @@ fn go(p: Point<i32>, dir: char, width: i32, height: i32) -> Option<(Point<i32>, 
     Some((new_point, dir))
 }
 
-fn handle_pt1(lines: &Vec<String>) -> i32 {
+fn create_grid(lines: &Vec<String>) -> (HashMap<Point<i32>, char>, (i32, i32)) {
     let height = lines.len() as i32;
     let width = lines.iter().map(|line| line.len()).max().unwrap() as i32;
     let mut grid: HashMap<Point<i32>, char> = HashMap::new();
@@ -63,22 +63,25 @@ fn handle_pt1(lines: &Vec<String>) -> i32 {
         }
     }
 
-    let start = Point {
-        x: 0,
-        y: height - 1,
-    };
+    (grid, (width, height))
+}
 
+fn shoot_beams(
+    grid: &HashMap<Point<i32>, char>,
+    width: i32,
+    height: i32,
+    start: Point<i32>,
+    start_dir: char,
+) -> i32 {
     let mut visited: HashSet<(Point<i32>, char)> = HashSet::new();
 
     let mut light: HashSet<Point<i32>> = HashSet::new();
     light.insert(start);
 
     let mut beams: Vec<(Point<i32>, char)> = Vec::new();
-    beams.push((start, 'E'));
+    beams.push((start, start_dir));
 
     while !beams.is_empty() {
-        //   println!("");
-        //   println!("ROUND");
         let mut next_beams: Vec<(Point<i32>, char)> = Vec::new();
         for (loc, dir) in beams {
             if visited.contains(&(loc, dir)) {
@@ -116,33 +119,80 @@ fn handle_pt1(lines: &Vec<String>) -> i32 {
             );
             light.insert(loc);
             visited.insert((loc, dir));
-
-            // println!(
-            //     "{}",
-            //     next_beams
-            //         .iter()
-            //         .map(|(loc, dir)| format!("{} {}", loc, dir).to_string())
-            //         .collect::<Vec<String>>()
-            //         .join("\n")
-            // );
         }
-
-        //   show_grid(&grid, width, height);
-        //   show_lights(&light, width, height);
 
         beams = next_beams;
     }
 
-    let mut total = 0;
-    for w in 0..width {
-        for h in 0..height {
-            if light.contains(&Point { x: w, y: h }) {
-                total += 1;
-            }
+    (0..width)
+        .into_iter()
+        .map(|w| {
+            (0..height)
+                .into_iter()
+                .map(|h| light.contains(&Point { x: w, y: h }))
+                .filter(|x| *x)
+                .count()
+        })
+        .sum::<usize>()
+        .try_into()
+        .unwrap()
+}
+
+fn handle_pt1(grid: &HashMap<Point<i32>, char>, width: i32, height: i32) -> i32 {
+    shoot_beams(
+        grid,
+        width,
+        height,
+        Point {
+            x: 0,
+            y: height - 1,
+        },
+        EAST,
+    )
+}
+
+fn handle_pt2(grid: &HashMap<Point<i32>, char>, width: i32, height: i32) -> i32 {
+    let mut max_lights = 0;
+
+    let mut starts: Vec<(Point<i32>, char)> = Vec::new();
+    for h in 0..height {
+        match h {
+            0 => starts.append(&mut vec![
+                (Point { x: 0, y: h }, EAST),
+                (Point { x: 0, y: h }, SOUTH),
+                (Point { x: width - 1, y: h }, WEST),
+                (Point { x: width - 1, y: h }, SOUTH),
+            ]),
+            height => starts.append(&mut vec![
+                (Point { x: 0, y: h }, EAST),
+                (Point { x: 0, y: h }, SOUTH),
+                (Point { x: width - 1, y: h }, WEST),
+                (Point { x: width - 1, y: h }, NORTH),
+            ]),
+            _ => starts.append(&mut vec![
+                (Point { x: 0, y: h }, EAST),
+                (Point { x: width - 1, y: h }, WEST),
+            ]),
         }
     }
+    for w in 1..width - 1 {
+        starts.append(&mut vec![
+            (Point { x: w, y: 0 }, NORTH),
+            (
+                Point {
+                    x: w,
+                    y: height - 1,
+                },
+                SOUTH,
+            ),
+        ]);
+    }
 
-    total
+    starts
+        .iter()
+        .map(|(start_loc, start_dir)| shoot_beams(grid, width, height, *start_loc, *start_dir))
+        .max()
+        .unwrap()
 }
 
 fn show_grid(grid: &HashMap<Point<i32>, char>, width: i32, height: i32) {
