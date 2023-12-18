@@ -1,7 +1,8 @@
 use advent_of_code::utils::input::read_lines;
 use advent_of_code::utils::point::Point;
 use clap::Parser;
-use std::collections::{BTreeMap, HashMap, HashSet};
+use std::cmp::Ordering;
+use std::collections::{BinaryHeap, HashMap, HashSet};
 use std::fmt;
 
 #[derive(Parser, Debug)]
@@ -17,10 +18,6 @@ fn main() {
     let lines = read_lines(args.input);
     let (grid, corner) = create_grid(&lines);
 
-    // 2464 too high
-    // 2454 too high
-    // 2453 too high
-    // 2421 too high
     println!("Part 1: {}", handle_pt1(&grid, corner));
     //  println!("Part 2: {}", handle_pt2(&grid, width, height));
 }
@@ -82,6 +79,24 @@ pub struct Visit {
     loc: Point<i32>,
     dir: char,
     streak: i32,
+}
+
+#[derive(Eq, PartialEq, Debug, Copy, Clone, Hash)]
+pub struct Heat {
+    visit: Visit,
+    heat: i32,
+}
+
+impl Ord for Heat {
+    fn cmp(&self, other: &Self) -> Ordering {
+        other.heat.cmp(&self.heat)
+    }
+}
+
+impl PartialOrd for Heat {
+    fn partial_cmp(&self, other: &Self) -> Option<Ordering> {
+        Some(self.cmp(other))
+    }
 }
 
 impl Visit {
@@ -180,11 +195,6 @@ impl State {
             .or_insert(heat);
     }
 
-    pub fn futile(&self, visit: Visit, heat: i32) -> bool {
-        let maybe_min = self.heat_map.get(&visit);
-        maybe_min.is_some() && heat >= *maybe_min.unwrap()
-    }
-
     pub fn get_min_heat(&self, loc: Point<i32>) -> i32 {
         *self
             .heat_map
@@ -202,47 +212,38 @@ fn handle_pt1(grid: &HashMap<Point<i32>, i32>, corner: Point<i32>) -> i32 {
     let start = Point { x: 0, y: 0 };
 
     // Use a sorted map (sorted on key, so key needs to be heat).
-    let mut priority_queue = BTreeMap::new();
+    let mut priority_queue = BinaryHeap::new();
     let right = Visit::new(go(start, EAST, corner).unwrap(), EAST, 1);
     let right_heat = *grid.get(&right.loc).unwrap();
-    priority_queue.insert(right_heat, right);
-    state.register(right, right_heat);
+    priority_queue.push(Heat {
+        heat: right_heat,
+        visit: right,
+    });
 
     let down = Visit::new(go(start, SOUTH, corner).unwrap(), SOUTH, 1);
     let down_heat = *grid.get(&down.loc).unwrap();
-    priority_queue.insert(down_heat, down);
-    state.register(down, down_heat);
+    priority_queue.push(Heat {
+        heat: down_heat,
+        visit: down,
+    });
 
     let mut visited: HashSet<Visit> = HashSet::new();
 
-    while !priority_queue.is_empty() {
-        let (heat, visit) = priority_queue.pop_first().unwrap();
-        print!("{} {} -- ", heat, visit);
+    while let Some(heat_state) = priority_queue.pop() {
+        let heat = heat_state.heat;
+        let visit = heat_state.visit;
+        state.register(visit, heat);
         if !visited.insert(visit) {
-            println!("BYE");
             continue;
         }
 
-        println!("add neighbors");
         for neighbor in visit.neighbors(corner) {
             let neighbor_heat = heat + grid.get(&neighbor.loc).unwrap();
-            priority_queue.insert(neighbor_heat, neighbor);
-            println!(" - neighbor has {} {}", neighbor_heat, neighbor);
-
-            state.register(neighbor, neighbor_heat);
+            priority_queue.push(Heat {
+                heat: neighbor_heat,
+                visit: neighbor,
+            });
         }
-    }
-
-    for y in 0..=corner.y {
-        println!(
-            "{}",
-            (0..=corner.x)
-                .into_iter()
-                .map(|x| Point { x: x, y: y })
-                .map(|p| format!("{:10}({}) ", state.get_min_heat(p), grid.get(&p).unwrap()))
-                .collect::<Vec<String>>()
-                .join(" ")
-        );
     }
 
     state.get_min_heat(corner)
