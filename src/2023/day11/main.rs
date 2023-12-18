@@ -141,7 +141,13 @@ mod tests {
 
         for (input, params) in tests {
             for (increase, want) in params {
-                assert_eq!(handle_pt1(&input, increase), want, "with increase {} for input\n{}", increase, input.join("\n"));
+                assert_eq!(
+                    handle_pt1(&input, increase),
+                    want,
+                    "with increase {} for input\n{}",
+                    increase,
+                    input.join("\n")
+                );
             }
         }
     }
