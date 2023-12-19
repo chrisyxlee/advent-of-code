@@ -11,3 +11,15 @@ impl<T: std::fmt::Display> fmt::Display for Point<T> {
         write!(f, "({},{})", self.x, self.y)
     }
 }
+
+impl<T: Ord> Ord for Point<T> {
+    fn cmp(&self, other: &Self) -> std::cmp::Ordering {
+        self.x.cmp(&other.x).then(self.y.cmp(&other.y))
+    }
+}
+
+impl<T: Ord> PartialOrd for Point<T> {
+    fn partial_cmp(&self, other: &Self) -> Option<std::cmp::Ordering> {
+        Some(self.cmp(other))
+    }
+}
