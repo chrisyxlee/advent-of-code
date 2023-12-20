@@ -21,15 +21,18 @@ fn main() {
     //  println!("Part 2: {}", handle_pt2(&lines));
 }
 
+#[derive(Eq, PartialEq, Debug, Copy, Clone, Hash)]
 enum Operation {
     GT,
     LT,
+    LE,
+    GE,
 }
 
 pub struct Rule {
     var: char,
     op: Operation,
-    val: i32,
+    val: i64,
     dst: String,
 }
 
@@ -46,6 +49,8 @@ impl Rule {
         let result = match self.op {
             Operation::GT => var > self.val,
             Operation::LT => var < self.val,
+            Operation::GE => var >= self.val,
+            Operation::LE => var <= self.val,
         };
 
         if result {
@@ -65,6 +70,8 @@ impl fmt::Display for Rule {
             match self.op {
                 Operation::GT => ">",
                 Operation::LT => "<",
+                Operation::GE => ">=",
+                Operation::LE => "<=",
             },
             self.val,
             self.dst
@@ -95,14 +102,130 @@ impl Checker {
 
 #[derive(Eq, PartialEq, Debug, Copy, Clone, Hash)]
 pub struct Value {
-    x: i32,
-    m: i32,
-    a: i32,
-    s: i32,
+    x: i64,
+    m: i64,
+    a: i64,
+    s: i64,
+}
+
+#[derive(Eq, PartialEq, Debug, Copy, Clone, Hash)]
+pub struct ValueRange {
+    x_min: i64,
+    x_max: i64,
+    m_min: i64,
+    m_max: i64,
+    a_min: i64,
+    a_max: i64,
+    s_min: i64,
+    s_max: i64,
+}
+
+impl ValueRange {
+    fn new() -> Self {
+        Self {
+            x_min: 1,
+            x_max: 4000,
+            m_min: 1,
+            m_max: 4000,
+            a_min: 1,
+            a_max: 4000,
+            s_min: 1,
+            s_max: 4000,
+        }
+    }
+
+    fn update(&mut self, rule: &Rule, pass: bool) {
+        let op = match (rule.op, pass) {
+            (_, true) => rule.op,
+            (Operation::GT, false) => Operation::LE,
+            (Operation::LT, false) => Operation::GE,
+            _ => unreachable!(),
+        };
+        match op {
+            Operation::GT => match rule.var {
+                'x' => self.x_min = rule.val + 1,
+                'm' => self.m_min = rule.val + 1,
+                'a' => self.a_min = rule.val + 1,
+                's' => self.s_min = rule.val + 1,
+                _ => unreachable!(),
+            },
+            Operation::LT => match rule.var {
+                'x' => self.x_max = rule.val - 1,
+                'm' => self.m_max = rule.val - 1,
+                'a' => self.a_max = rule.val - 1,
+                's' => self.s_max = rule.val - 1,
+                _ => unreachable!(),
+            },
+            Operation::LE => match rule.var {
+                'x' => self.x_max = rule.val,
+                'm' => self.m_max = rule.val,
+                'a' => self.a_max = rule.val,
+                's' => self.s_max = rule.val,
+                _ => unreachable!(),
+            },
+            Operation::GE => match rule.var {
+                'x' => self.x_min = rule.val,
+                'm' => self.m_min = rule.val,
+                'a' => self.a_min = rule.val,
+                's' => self.s_min = rule.val,
+                _ => unreachable!(),
+            },
+        }
+    }
+
+    fn combinations(&self) -> i64 {
+        *vec![
+            (self.x_max - self.x_min)
+                * (self.m_max - self.m_min)
+                * (self.a_max - self.a_min)
+                * (self.s_max - self.s_min),
+            0,
+        ]
+        .iter()
+        .max()
+        .unwrap()
+    }
+}
+
+impl Ord for ValueRange {
+    fn cmp(&self, other: &Self) -> std::cmp::Ordering {
+        self.x_min
+            .cmp(&other.x_min)
+            .then(self.x_max.cmp(&other.x_max))
+            .then(self.m_min.cmp(&other.m_min))
+            .then(self.m_max.cmp(&other.m_max))
+            .then(self.a_min.cmp(&other.a_min))
+            .then(self.a_max.cmp(&other.a_max))
+            .then(self.s_min.cmp(&other.s_min))
+            .then(self.s_max.cmp(&other.s_max))
+    }
+}
+
+impl PartialOrd for ValueRange {
+   fn partial_cmp(&self, other: &Self) -> Option<std::cmp::Ordering> {
+       Some(self.cmp(other))
+   }
+}
+
+impl fmt::Display for ValueRange {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        write!(
+            f,
+            "(x=[{},{}],m=[{},{}],a=[{},{}],s=[{},{}])",
+            self.x_min,
+            self.x_max,
+            self.m_min,
+            self.m_max,
+            self.a_min,
+            self.a_max,
+            self.s_min,
+            self.s_max
+        )
+    }
 }
 
 impl Value {
-    fn accepted(&self) -> i32 {
+    fn accepted(&self) -> i64 {
         self.x + self.m + self.a + self.s
     }
 }
@@ -162,7 +285,7 @@ fn parse_checker(line: &str) -> (String, Checker) {
                                                 }
                                             }
                                             3 => {
-                                                rule.val = rule_sub.as_str().parse::<i32>().unwrap()
+                                                rule.val = rule_sub.as_str().parse::<i64>().unwrap()
                                             }
                                             4 => rule.dst = rule_sub.as_str().to_string(),
                                             _ => {}
@@ -194,10 +317,10 @@ fn parse_values(line: &str) -> Value {
         for (i, capt) in m.iter().enumerate() {
             if let Some(sub) = capt {
                 match i {
-                    1 => value.x = sub.as_str().parse::<i32>().unwrap(),
-                    2 => value.m = sub.as_str().parse::<i32>().unwrap(),
-                    3 => value.a = sub.as_str().parse::<i32>().unwrap(),
-                    4 => value.s = sub.as_str().parse::<i32>().unwrap(),
+                    1 => value.x = sub.as_str().parse::<i64>().unwrap(),
+                    2 => value.m = sub.as_str().parse::<i64>().unwrap(),
+                    3 => value.a = sub.as_str().parse::<i64>().unwrap(),
+                    4 => value.s = sub.as_str().parse::<i64>().unwrap(),
                     _ => {}
                 }
             }
@@ -207,7 +330,7 @@ fn parse_values(line: &str) -> Value {
     value
 }
 
-fn handle_pt1(lines: &Vec<String>) -> i32 {
+fn handle_pt1(lines: &Vec<String>) -> i64 {
     let binding = lines
         .iter()
         .enumerate()
@@ -244,6 +367,72 @@ fn handle_pt1(lines: &Vec<String>) -> i32 {
     total
 }
 
+fn rec_find_accepted_rule_paths(
+    checker: &HashMap<String, Checker>,
+    name: &str,
+    vrange: ValueRange,
+) -> Vec<ValueRange> {
+    match name {
+        "A" => return vec![vrange],
+        "R" => return vec![],
+        _ => {}
+    }
+
+    let mut res = Vec::new();
+    let check = checker.get(name).unwrap();
+    let mut vr = vrange;
+    for rule in &check.rules {
+        let mut pass_vr = vr.clone();
+        pass_vr.update(rule, true);
+        res.append(&mut rec_find_accepted_rule_paths(
+            checker, &rule.dst, pass_vr,
+        ));
+        vr.update(&rule, false);
+    }
+
+    res.append(&mut rec_find_accepted_rule_paths(
+        checker,
+        &check.otherwise,
+        vr,
+    ));
+
+    res
+}
+
+fn find_accepted_rule_paths(checkers: &HashMap<String, Checker>) -> Vec<ValueRange> {
+    rec_find_accepted_rule_paths(checkers, "in", ValueRange::new())
+}
+
+fn handle_pt2(lines: &Vec<String>) -> i64 {
+    let binding = lines
+        .iter()
+        .enumerate()
+        .filter(|(_, x)| x.is_empty())
+        .map(|(i, _)| i)
+        .collect::<Vec<usize>>();
+    let split_idx = binding.first().unwrap();
+
+    let mut checkers = HashMap::new();
+    for l in 0..*split_idx {
+        let (name, checker) = parse_checker(&lines[l]);
+        checkers.insert(name, checker);
+    }
+
+    let mut possibles = find_accepted_rule_paths(&checkers);
+    possibles.sort();
+    println!(
+        "possibles
+{}",
+        possibles
+            .iter()
+            .map(|x| x.to_string())
+            .collect::<Vec<String>>()
+            .join("\n")
+    );
+
+    possibles.iter().map(|x| x.combinations()).sum()
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -270,17 +459,22 @@ mod tests {
                 String::from("{x=2461,m=1339,a=466,s=291}"),
                 String::from("{x=2127,m=1623,a=2188,s=1013}"),
             ],
-            19114,
+            (19114, 167409079868000),
         )];
 
-        for (input, want) in tests {
-            assert_eq!(handle_pt1(&input), want, "with input\n{}", input.join("\n"));
-            // assert_eq!(
-            //     handle_pt2(&input),
-            //     want2,
-            //     "with input\n{}",
-            //     input.join("\n")
-            // );
+        for (input, (want1, want2)) in tests {
+            assert_eq!(
+                handle_pt1(&input),
+                want1,
+                "with input\n{}",
+                input.join("\n")
+            );
+            assert_eq!(
+                handle_pt2(&input),
+                want2,
+                "with input\n{}",
+                input.join("\n")
+            );
         }
     }
 }
