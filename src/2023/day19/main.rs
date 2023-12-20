@@ -18,7 +18,7 @@ fn main() {
     let lines = read_lines(args.input);
 
     println!("Part 1: {}", handle_pt1(&lines));
-    //  println!("Part 2: {}", handle_pt2(&lines));
+    println!("Part 2: {}", handle_pt2(&lines));
 }
 
 #[derive(Eq, PartialEq, Debug, Copy, Clone, Hash)]
@@ -175,10 +175,10 @@ impl ValueRange {
 
     fn combinations(&self) -> i64 {
         *vec![
-            (self.x_max - self.x_min)
-                * (self.m_max - self.m_min)
-                * (self.a_max - self.a_min)
-                * (self.s_max - self.s_min),
+            (self.x_max - self.x_min + 1)
+                * (self.m_max - self.m_min + 1)
+                * (self.a_max - self.a_min + 1)
+                * (self.s_max - self.s_min + 1),
             0,
         ]
         .iter()
@@ -202,9 +202,9 @@ impl Ord for ValueRange {
 }
 
 impl PartialOrd for ValueRange {
-   fn partial_cmp(&self, other: &Self) -> Option<std::cmp::Ordering> {
-       Some(self.cmp(other))
-   }
+    fn partial_cmp(&self, other: &Self) -> Option<std::cmp::Ordering> {
+        Some(self.cmp(other))
+    }
 }
 
 impl fmt::Display for ValueRange {
@@ -384,9 +384,21 @@ fn rec_find_accepted_rule_paths(
     for rule in &check.rules {
         let mut pass_vr = vr.clone();
         pass_vr.update(rule, true);
-        res.append(&mut rec_find_accepted_rule_paths(
-            checker, &rule.dst, pass_vr,
-        ));
+        println!("{}: on rule {} -> {} becomes {}", name, rule, vr, pass_vr);
+        let mut combinations = rec_find_accepted_rule_paths(checker, &rule.dst, pass_vr);
+        println!(
+            "{}: on rule {} -> {} becomes {} = [{}]",
+            name,
+            rule,
+            vr,
+            pass_vr,
+            combinations
+                .iter()
+                .map(|x| x.to_string())
+                .collect::<Vec<String>>()
+                .join(" & ")
+        );
+        res.append(&mut combinations);
         vr.update(&rule, false);
     }
 
