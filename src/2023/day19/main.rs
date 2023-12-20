@@ -4,6 +4,7 @@ use advent_of_code::utils::input::read_lines;
 use clap::Parser;
 use regex::Regex;
 use std::fmt;
+use std::time::Instant;
 
 #[derive(Parser, Debug)]
 #[command(author, version, about, long_about = None)]
@@ -17,8 +18,14 @@ fn main() {
     let args = Args::parse();
     let lines = read_lines(args.input);
 
-    println!("Part 1: {}", handle_pt1(&lines));
-    println!("Part 2: {}", handle_pt2(&lines));
+    let mut start = Instant::now();
+    let (checkers, values) = parse_lines(&lines);
+    println!("Part 1: {}", handle_pt1(&checkers, &values));
+    println!("Elapsed: {:.2?}", start.elapsed());
+
+    start = Instant::now();
+    println!("Part 2: {}", handle_pt2(&checkers));
+    println!("Elapsed: {:.2?}", start.elapsed());
 }
 
 #[derive(Eq, PartialEq, Debug, Copy, Clone, Hash)]
@@ -87,15 +94,11 @@ pub struct Checker {
 impl Checker {
     fn check(&self, value: Value) -> String {
         for rule in &self.rules {
-            // print!(" --> rule {} --> ", rule);
             if let Some(dst) = rule.run(value) {
-                // println!("ok");
                 return dst;
             }
-            // println!("nope");
         }
 
-        //   println!(" --> therefore, {}", self.otherwise);
         self.otherwise.clone()
     }
 }
@@ -187,26 +190,6 @@ impl ValueRange {
     }
 }
 
-impl Ord for ValueRange {
-    fn cmp(&self, other: &Self) -> std::cmp::Ordering {
-        self.x_min
-            .cmp(&other.x_min)
-            .then(self.x_max.cmp(&other.x_max))
-            .then(self.m_min.cmp(&other.m_min))
-            .then(self.m_max.cmp(&other.m_max))
-            .then(self.a_min.cmp(&other.a_min))
-            .then(self.a_max.cmp(&other.a_max))
-            .then(self.s_min.cmp(&other.s_min))
-            .then(self.s_max.cmp(&other.s_max))
-    }
-}
-
-impl PartialOrd for ValueRange {
-    fn partial_cmp(&self, other: &Self) -> Option<std::cmp::Ordering> {
-        Some(self.cmp(other))
-    }
-}
-
 impl fmt::Display for ValueRange {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         write!(
@@ -236,76 +219,101 @@ impl fmt::Display for Value {
     }
 }
 
-fn parse_checker(line: &str) -> (String, Checker) {
-    let line_re = Regex::new(r"(.*)\{(.*)\}").unwrap();
-    let rule_re = Regex::new(r"(\w)(<|>)(\d+):(\w+)").unwrap();
+fn parse_rule(line: &Vec<char>) -> Rule {
+    let mut stage = 0;
+    let mut val = Vec::new();
+    let mut dst = Vec::new();
+    let mut rule = Rule {
+        var: '?',
+        op: Operation::LT,
+        val: 0,
+        dst: String::from(""),
+    };
+    for c in line {
+        match stage {
+            0 => {
+                rule.var = *c;
+                stage += 1;
+            }
+            1 => {
+                rule.op = match c {
+                    '<' => Operation::LT,
+                    '>' => Operation::GT,
+                    _ => unreachable!(),
+                };
+                stage += 1;
+            }
+            2 => {
+                if c.is_numeric() {
+                    val.push(*c);
+                } else {
+                    rule.val = val.iter().collect::<String>().parse::<i64>().unwrap();
+                    stage += 1;
+                }
+            }
+            3 => {
+                dst.push(*c);
+            }
+            _ => unreachable!(),
+        }
+    }
 
-    let mut name = "".to_string();
+    rule.dst = dst.iter().collect::<String>();
+
+    rule
+}
+
+fn parse_checker(line: &str) -> (String, Checker) {
+    let mut name = Vec::new();
     let mut checker = Checker {
         rules: Vec::new(),
         otherwise: String::from(""),
     };
 
-    for m in line_re.captures_iter(line) {
-        for (i, capt) in m.iter().enumerate() {
-            if let Some(sub) = capt {
-                match i {
-                    1 => name = sub.as_str().to_string(),
-                    2 => {
-                        let parts = sub.as_str().split(",").collect::<Vec<&str>>();
-                        for (i, part) in parts.iter().enumerate() {
-                            if i == parts.len() - 1 {
-                                checker.otherwise = part.to_string();
-                                continue;
-                            }
-
-                            let mut rule = Rule {
-                                var: '?',
-                                op: Operation::LT,
-                                val: 0,
-                                dst: String::from(""),
-                            };
-                            for rule_m in rule_re.captures_iter(part) {
-                                for (rule_i, rule_capt) in rule_m.iter().enumerate() {
-                                    if let Some(rule_sub) = rule_capt {
-                                        match rule_i {
-                                            1 => {
-                                                rule.var = *rule_sub
-                                                    .as_str()
-                                                    .chars()
-                                                    .collect::<Vec<char>>()
-                                                    .first()
-                                                    .unwrap()
-                                            }
-                                            2 => {
-                                                rule.op = match rule_sub.as_str() {
-                                                    ">" => Operation::GT,
-                                                    "<" => Operation::LT,
-                                                    _ => unreachable!(),
-                                                }
-                                            }
-                                            3 => {
-                                                rule.val = rule_sub.as_str().parse::<i64>().unwrap()
-                                            }
-                                            4 => rule.dst = rule_sub.as_str().to_string(),
-                                            _ => {}
-                                        }
-                                    }
-                                }
-                            }
-                            checker.rules.push(rule);
-                        }
-                    }
-                    _ => {}
+    let mut rule_start = false;
+    let mut rule = Vec::new();
+    for c in line.chars() {
+        match c {
+            '}' => checker.otherwise = rule.iter().collect::<String>(),
+            '{' => rule_start = true,
+            ',' => {
+                checker.rules.push(parse_rule(&rule));
+                rule.clear();
+            }
+            _ => {
+                if rule_start {
+                    rule.push(c);
+                } else {
+                    name.push(c);
                 }
             }
         }
     }
 
-    (name, checker)
+    (name.iter().collect::<String>(), checker)
 }
 
-fn parse_values(line: &str) -> Value {
+fn parse_lines(lines: &Vec<String>) -> (HashMap<String, Checker>, Vec<Value>) {
+    let start = Instant::now();
+    let mut checkers = HashMap::new();
+    let mut i = 0;
+    while !lines[i].is_empty() {
+        let (name, checker) = parse_checker(&lines[i]);
+        checkers.insert(name, checker);
+        i += 1;
+    }
+
+    let mut values = Vec::new();
+    while i < lines.len() {
+        values.push(parse_value(&lines[i]));
+        i += 1;
+    }
+
+    println!("Parse Lines: elapsed: {:.2?}", start.elapsed());
+    (checkers, values)
+}
+
+fn parse_value(line: &str) -> Value {
     let value_re = Regex::new(r"\{x=(\d+),m=(\d+),a=(\d+),s=(\d+)\}").unwrap();
     let mut value = Value {
         x: 0,
@@ -330,36 +338,19 @@ fn parse_values(line: &str) -> Value {
     value
 }
 
-fn handle_pt1(lines: &Vec<String>) -> i64 {
-    let binding = lines
-        .iter()
-        .enumerate()
-        .filter(|(_, x)| x.is_empty())
-        .map(|(i, _)| i)
-        .collect::<Vec<usize>>();
-    let split_idx = binding.first().unwrap();
-
-    let mut checkers = HashMap::new();
-    for l in 0..*split_idx {
-        let (name, checker) = parse_checker(&lines[l]);
-        checkers.insert(name, checker);
-    }
-
+fn handle_pt1(checkers: &HashMap<String, Checker>, values: &Vec<Value>) -> i64 {
     let mut total = 0;
-    for l in (*split_idx + 1)..lines.len() {
-        let value = parse_values(&lines[l]);
+    for value in values {
         let mut workflow = "in".to_string();
         loop {
-            // println!("{} -- workflow = {}", value, workflow);
             if workflow == "A" || workflow == "R" {
                 break;
             }
 
-            workflow = checkers.get(&workflow).unwrap().check(value);
+            workflow = checkers.get(&workflow).unwrap().check(*value);
         }
 
         if workflow == "A" {
-            // println!("{} is accepted ({})", value, value.accepted());
             total += value.accepted();
         }
     }
@@ -367,82 +358,42 @@ fn handle_pt1(lines: &Vec<String>) -> i64 {
     total
 }
 
-fn rec_find_accepted_rule_paths(
+fn find_accepted_rule_paths(
     checker: &HashMap<String, Checker>,
     name: &str,
-    vrange: ValueRange,
+    value_range: ValueRange,
 ) -> Vec<ValueRange> {
     match name {
-        "A" => return vec![vrange],
+        "A" => return vec![value_range],
         "R" => return vec![],
         _ => {}
     }
 
     let mut res = Vec::new();
     let check = checker.get(name).unwrap();
-    let mut vr = vrange;
+    let mut curr = value_range;
     for rule in &check.rules {
-        let mut pass_vr = vr.clone();
-        pass_vr.update(rule, true);
-        println!("{}: on rule {} -> {} becomes {}", name, rule, vr, pass_vr);
-        let mut combinations = rec_find_accepted_rule_paths(checker, &rule.dst, pass_vr);
-        println!(
-            "{}: on rule {} -> {} becomes {} = [{}]",
-            name,
-            rule,
-            vr,
-            pass_vr,
-            combinations
-                .iter()
-                .map(|x| x.to_string())
-                .collect::<Vec<String>>()
-                .join(" & ")
-        );
-        res.append(&mut combinations);
-        vr.update(&rule, false);
+        let mut pass = curr.clone();
+        pass.update(rule, true);
+        res.append(&mut find_accepted_rule_paths(checker, &rule.dst, pass));
+
+        curr.update(&rule, false);
     }
 
-    res.append(&mut rec_find_accepted_rule_paths(
+    res.append(&mut find_accepted_rule_paths(
         checker,
         &check.otherwise,
-        vr,
+        curr,
     ));
 
     res
 }
 
-fn find_accepted_rule_paths(checkers: &HashMap<String, Checker>) -> Vec<ValueRange> {
-    rec_find_accepted_rule_paths(checkers, "in", ValueRange::new())
-}
-
-fn handle_pt2(lines: &Vec<String>) -> i64 {
-    let binding = lines
-        .iter()
-        .enumerate()
-        .filter(|(_, x)| x.is_empty())
-        .map(|(i, _)| i)
-        .collect::<Vec<usize>>();
-    let split_idx = binding.first().unwrap();
-
-    let mut checkers = HashMap::new();
-    for l in 0..*split_idx {
-        let (name, checker) = parse_checker(&lines[l]);
-        checkers.insert(name, checker);
-    }
-
-    let mut possibles = find_accepted_rule_paths(&checkers);
-    possibles.sort();
-    println!(
-        "possibles
-{}",
-        possibles
-            .iter()
-            .map(|x| x.to_string())
-            .collect::<Vec<String>>()
-            .join("\n")
-    );
-
-    possibles.iter().map(|x| x.combinations()).sum()
+fn handle_pt2(checkers: &HashMap<String, Checker>) -> i64 {
+    find_accepted_rule_paths(checkers, "in", ValueRange::new())
+        .into_iter()
+        .map(|x| x.combinations())
+        .sum()
 }
 
 #[cfg(test)]
@@ -475,14 +426,15 @@ mod tests {
         )];
 
         for (input, (want1, want2)) in tests {
+            let (checker, values) = parse_lines(&input);
             assert_eq!(
-                handle_pt1(&input),
+                handle_pt1(&checker, &values),
                 want1,
                 "with input\n{}",
                 input.join("\n")
             );
             assert_eq!(
-                handle_pt2(&input),
+                handle_pt2(&checker),
                 want2,
                 "with input\n{}",
                 input.join("\n")
