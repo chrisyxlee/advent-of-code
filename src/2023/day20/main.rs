@@ -21,13 +21,12 @@ fn main() {
     let lines = read_lines(args.input);
 
     let mut start = Instant::now();
-    let mut modules = parse_lines(&lines);
-    println!("Part 1: {}", handle_pt1(&mut modules));
+    println!("Part 1: {}", handle_pt1(&mut parse_lines(&lines)));
     println!("Elapsed: {:.2?}", start.elapsed());
 
-    //  start = Instant::now();
-    //  println!("Part 2: {}", handle_pt2(&checkers));
-    //  println!("Elapsed: {:.2?}", start.elapsed());
+    start = Instant::now();
+    println!("Part 2: {}", handle_pt2(&mut parse_lines(&lines)));
+    println!("Elapsed: {:.2?}", start.elapsed());
 }
 
 #[derive(Eq, PartialEq, Debug, Copy, Clone, Hash)]
@@ -55,15 +54,6 @@ impl fmt::Display for ModuleType {
 enum Pulse {
     LO = 0,
     HI = 1,
-}
-
-impl Pulse {
-    fn opposite(&self) -> Self {
-        match self {
-            Pulse::HI => Pulse::LO,
-            Pulse::LO => Pulse::HI,
-        }
-    }
 }
 
 impl fmt::Display for Pulse {
@@ -131,14 +121,6 @@ impl Module {
         }
 
         vec![].into()
-    }
-
-    fn destinations(&self, src: &String) -> VecDeque<(String, String)> {
-        return self
-            .dsts
-            .iter()
-            .map(|dst: &String| (src.clone(), dst.clone()))
-            .collect::<VecDeque<(String, String)>>();
     }
 
     fn original(&self) -> bool {
@@ -274,6 +256,36 @@ fn handle_pt1(modules: &mut HashMap<String, Module>) -> i64 {
     hi * lo
 }
 
+fn handle_pt2(modules: &mut HashMap<String, Module>) -> i64 {
+    let mut counts = HashMap::new();
+    counts.insert(Pulse::LO, 0);
+    counts.insert(Pulse::HI, 0);
+
+    let mut button = 1;
+    loop {
+        let mut queue: VecDeque<(String, Pulse, String)> = VecDeque::new();
+        queue.push_back((
+            format!("button {}", button).to_string(),
+            Pulse::LO,
+            "broadcaster".to_string(),
+        ));
+        while let Some((from, pulse, curr)) = queue.pop_front() {
+            if pulse == Pulse::LO && curr == "rx" {
+                return button;
+            }
+
+            counts.entry(pulse).and_modify(|e| *e += 1);
+            modules.entry(curr.clone()).and_modify(|e| {
+                for (send, dst) in e.process(&from, pulse) {
+                    queue.push_back((curr.clone(), send, dst.clone()));
+                }
+            });
+        }
+
+        button += 1;
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -312,12 +324,6 @@ mod tests {
                 "with input\n{}",
                 input.join("\n")
             );
-            // assert_eq!(
-            //     handle_pt2(&checker),
-            //     want2,
-            //     "with input\n{}",
-            //     input.join("\n")
-            // );
         }
     }
 }
