@@ -1,5 +1,8 @@
 use core::fmt;
-use std::collections::{vec_deque, HashMap, VecDeque};
+use std::{
+    borrow::Borrow,
+    collections::{HashMap, VecDeque},
+};
 
 use advent_of_code::utils::input::read_lines;
 use clap::Parser;
@@ -77,36 +80,31 @@ impl fmt::Display for Pulse {
 }
 
 pub struct Module {
+    name: String,
     module_type: ModuleType,
     dsts: Vec<String>,
     on: bool,
     // TODO FOR EACH -- this should be a HashMap that default to LO first
-    memory: Option<Pulse>,
+    memory: HashMap<String, Pulse>,
 }
 
 impl Module {
-    fn process(&mut self, name: &str, pulse: Pulse) -> VecDeque<(Pulse, String)> {
-        if name == "b" || name == "con"{
-            println!("process {} {}{}", pulse, self.module_type, name);
-        }
-        match (self.module_type, pulse) {
+    fn process(&mut self, from: &str, recv: Pulse) -> VecDeque<(Pulse, String)> {
+        match (self.module_type, recv) {
             (ModuleType::Broadcaster, _) => {
                 return self
                     .dsts
                     .iter()
-                    .map(|d| (pulse, d.clone()))
+                    .map(|d| (recv, d.clone()))
                     .collect::<VecDeque<(Pulse, String)>>();
             }
             (ModuleType::FlipFlop, Pulse::LO) => {
-                let prev = self.on;
                 self.on = !self.on;
-                println!("{} is now {}", name, self.on);
 
                 let mut send = Pulse::LO;
                 if self.on {
                     send = Pulse::HI;
                 }
-                //  println!("toggled: now {}, prev {}, so send {}", self.on, prev, send);
                 return self
                     .dsts
                     .iter()
@@ -115,23 +113,14 @@ impl Module {
             }
             (ModuleType::FlipFlop, Pulse::HI) => {}
             (ModuleType::Conjunction, _) => {
-                // TODO THIS IS WRONG -- depends on the state of the upstream modules lol, not just the pulses
-                if self.memory.is_some() {
-                    println!("memory = {}, recv = {}", self.memory.unwrap(), pulse);
-                } else {
-                    println!("memory = none, recv = {}", pulse);
-                }
-                let mut send: Pulse;
-                if let Some(mem) = self.memory {
-                    (self.memory, send) = match (mem, pulse) {
-                        (_, Pulse::LO) => (Some(Pulse::LO), Pulse::HI),
-                        (Pulse::HI, Pulse::HI) => (Some(Pulse::HI), Pulse::LO),
-                        (Pulse::LO, Pulse::HI) => (Some(Pulse::LO), Pulse::HI),
-                    }
-                } else {
-                    self.memory = Some(pulse);
-                    send = pulse.opposite();
-                }
+                self.memory
+                    .entry(from.to_string())
+                    .and_modify(|e| *e = recv);
+
+                let send: Pulse = match self.memory.iter().all(|(_, p)| *p == Pulse::HI) {
+                    true => Pulse::LO,
+                    false => Pulse::HI,
+                };
 
                 return self
                     .dsts
@@ -152,16 +141,16 @@ impl Module {
             .collect::<VecDeque<(String, String)>>();
     }
 
-    fn finalize(&mut self) {
-        if self.module_type == ModuleType::Conjunction {
-            self.memory = None;
-        }
-    }
-
     fn original(&self) -> bool {
         match self.module_type {
-            ModuleType::Conjunction => self.memory.is_some() && self.memory.unwrap() == Pulse::LO,
-            ModuleType::FlipFlop => !self.on,
+            // ModuleType::Conjunction => self.memory.iter().all(|(_, p)| *p == Pulse::LO),
+            ModuleType::FlipFlop => {
+                if self.on {
+                    return false;
+                } else {
+                    return true;
+                }
+            }
             _ => true,
         }
     }
@@ -202,8 +191,9 @@ fn parse_line(line: &str) -> (String, Module) {
     }
 
     (
-        name,
+        name.clone(),
         Module {
+            name: name.clone(),
             module_type: module_type,
             dsts: chars
                 .collect::<String>()
@@ -211,7 +201,7 @@ fn parse_line(line: &str) -> (String, Module) {
                 .into_iter()
                 .map(|x| x.to_string())
                 .collect::<Vec<String>>(),
-            memory: None,
+            memory: HashMap::new(),
             on: false,
         },
     )
@@ -225,12 +215,24 @@ fn parse_lines(lines: &Vec<String>) -> HashMap<String, Module> {
         modules.insert(name, module);
     }
 
+    let mut keys = Vec::new();
+    for k in modules.borrow().keys() {
+        keys.push(k.clone());
+    }
+
+    for name in keys {
+        for dst in modules.get(&name).unwrap().dsts.clone() {
+            modules.entry(dst.clone()).and_modify(|e| {
+                e.memory.insert(name.to_string(), Pulse::LO);
+            });
+        }
+    }
+
     println!("Parse Lines: elapsed: {:.2?}", start.elapsed());
     modules
 }
 
 fn handle_pt1(modules: &mut HashMap<String, Module>) -> i64 {
-    println!("\n\n\n");
     let mut counts = HashMap::new();
     counts.insert(Pulse::LO, 0);
     counts.insert(Pulse::HI, 0);
@@ -239,59 +241,37 @@ fn handle_pt1(modules: &mut HashMap<String, Module>) -> i64 {
 
     let total = 1000;
     while button <= total {
-        let mut queue: VecDeque<(Pulse, String)> = VecDeque::new();
-        queue.push_back((Pulse::LO, "broadcaster".to_string()));
-        println!("\n|-> button {}: {} {}", button, Pulse::LO, "broadcaster");
-        while let Some((pulse, curr)) = queue.pop_front() {
+        let mut queue: VecDeque<(String, Pulse, String)> = VecDeque::new();
+        queue.push_back((
+            format!("button {}", button).to_string(),
+            Pulse::LO,
+            "broadcaster".to_string(),
+        ));
+        while let Some((from, pulse, curr)) = queue.pop_front() {
             counts.entry(pulse).and_modify(|e| *e += 1);
             modules.entry(curr.clone()).and_modify(|e| {
-                for (send, dst) in e.process(&curr, pulse) {
-                    println!("|-> {} {} {}", curr, send, &dst);
-                    queue.push_back((send, dst));
+                for (send, dst) in e.process(&from, pulse) {
+                    queue.push_back((curr.clone(), send, dst.clone()));
                 }
             });
         }
 
-        modules.iter_mut().map(|(_, mut module)| module.finalize());
-
         if modules.iter().all(|(_, m)| m.original()) {
-            println!("cycle detected on button {}", button);
-            break;
-        }
-        if button > 4 {
             break;
         }
 
         button += 1;
     }
 
-    //  let mut total = 0;
-    //  for value in values {
-    //      let mut workflow = "in".to_string();
-    //      loop {
-    //          if workflow == "A" || workflow == "R" {
-    //              break;
-    //          }
-
-    //          workflow = modules.get(&workflow).unwrap().check(*value);
-    //      }
-
-    //      if workflow == "A" {
-    //          total += value.accepted();
-    //      }
-    //  }
-    let lo = *counts.get(&Pulse::LO).unwrap();
-    let hi = *counts.get(&Pulse::HI).unwrap();
+    let mut lo = *counts.get(&Pulse::LO).unwrap();
+    let mut hi = *counts.get(&Pulse::HI).unwrap();
     let multiplier = total / button;
-    let new_lo = multiplier * lo;
-    let new_hi = multiplier * hi;
-    println!(
-        "{} low, {} high, repeated on {} button press, so multiply by {} to get {} low, {} high",
-        lo, hi, button, multiplier, new_lo, new_hi
-    );
+    if button <= total {
+        lo *= multiplier;
+        hi *= multiplier;
+    }
 
-    //  total
-    new_hi * new_lo
+    hi * lo
 }
 
 #[cfg(test)]
