@@ -80,12 +80,15 @@ pub struct Module {
     module_type: ModuleType,
     dsts: Vec<String>,
     on: bool,
+    // TODO FOR EACH -- this should be a HashMap that default to LO first
     memory: Option<Pulse>,
 }
 
 impl Module {
     fn process(&mut self, name: &str, pulse: Pulse) -> VecDeque<(Pulse, String)> {
-        //   println!("process {} {}{}", pulse, self.module_type, name);
+        if name == "b" || name == "con"{
+            println!("process {} {}{}", pulse, self.module_type, name);
+        }
         match (self.module_type, pulse) {
             (ModuleType::Broadcaster, _) => {
                 return self
@@ -97,6 +100,7 @@ impl Module {
             (ModuleType::FlipFlop, Pulse::LO) => {
                 let prev = self.on;
                 self.on = !self.on;
+                println!("{} is now {}", name, self.on);
 
                 let mut send = Pulse::LO;
                 if self.on {
@@ -237,12 +241,12 @@ fn handle_pt1(modules: &mut HashMap<String, Module>) -> i64 {
     while button <= total {
         let mut queue: VecDeque<(Pulse, String)> = VecDeque::new();
         queue.push_back((Pulse::LO, "broadcaster".to_string()));
-        println!("button {}: {} {}", button, Pulse::LO, "broadcaster");
+        println!("\n|-> button {}: {} {}", button, Pulse::LO, "broadcaster");
         while let Some((pulse, curr)) = queue.pop_front() {
             counts.entry(pulse).and_modify(|e| *e += 1);
             modules.entry(curr.clone()).and_modify(|e| {
                 for (send, dst) in e.process(&curr, pulse) {
-                    println!("{} {} {}", curr, send, &dst);
+                    println!("|-> {} {} {}", curr, send, &dst);
                     queue.push_back((send, dst));
                 }
             });
